@@ -1,14 +1,6 @@
-pub fn add(left: usize, right: usize) -> usize {
-    left + right
-}
+use std::error::Error;
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+type Result<T> = std::result::Result<T, Box<dyn Error + Send + Sync>>;
 
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
-}
+pub mod db;
+pub mod db_record;
