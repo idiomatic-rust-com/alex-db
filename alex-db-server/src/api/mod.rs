@@ -1,4 +1,8 @@
-use alex_db_lib::db::Db;
+use crate::error::ResponseError;
+use alex_db_lib::{
+    db::Db,
+    db_record::{ValuePost, ValuePut, ValueResponse},
+};
 use axum::{
     error_handling::HandleErrorLayer,
     http::StatusCode,
@@ -8,11 +12,37 @@ use axum::{
 use std::{sync::Arc, time::Duration};
 use tower::{BoxError, ServiceBuilder};
 use tower_http::trace::TraceLayer;
+use utoipa::OpenApi;
+use utoipa_swagger_ui::SwaggerUi;
 
 mod values;
 
 pub async fn router(db: Arc<Db>) -> Router {
+    #[derive(OpenApi)]
+    #[openapi(
+        paths(
+            values::create,
+            values::delete,
+            values::list,
+            values::read,
+            values::update,
+        ),
+        components(
+            schemas(
+                ResponseError,
+                ValuePost,
+                ValuePut,
+                ValueResponse,
+            )
+        ),
+        tags(
+            (name = "values", description = "Values management API")
+        )
+    )]
+    struct ApiDoc;
+
     Router::new()
+        .merge(SwaggerUi::new("/swagger-ui").url("/api-doc/openapi.json", ApiDoc::openapi()))
         .route("/values", get(values::list).post(values::create))
         .route(
             "/values/:key",

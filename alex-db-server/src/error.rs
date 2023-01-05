@@ -6,6 +6,7 @@ use axum::{
 use serde::Serialize;
 use serde_json::json;
 use std::error::Error;
+use utoipa::ToSchema;
 
 #[derive(Debug)]
 pub enum AppError {
@@ -36,7 +37,7 @@ impl From<Box<dyn Error + Send + Sync>> for AppError {
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, ToSchema)]
 pub struct ResponseError {
     pub error: String,
 }

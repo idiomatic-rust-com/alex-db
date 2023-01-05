@@ -1,4 +1,7 @@
-use crate::{db_record::DbRecord, Result};
+use crate::{
+    db_record::{DbRecord, ValuePost, ValuePut, ValueResponse},
+    Result,
+};
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, sync::Mutex};
 
@@ -16,43 +19,57 @@ impl Db {
         }
     }
 
-    pub fn select_all(&self) -> Result<Vec<DbRecord>> {
+    pub fn select_all(&self) -> Result<Vec<ValueResponse>> {
         let database = self.database.lock().unwrap();
         let mut result = vec![];
 
         for (_key, val) in database.iter() {
             let val = val.clone();
-            result.append(&mut vec![val]);
+            result.append(&mut vec![val.into()]);
         }
 
         Ok(result)
     }
 
-    pub fn try_delete(&self, key: &str) -> Result<Option<DbRecord>> {
+    pub fn try_delete(&self, key: &str) -> Result<Option<ValueResponse>> {
         let mut database = self.database.lock().unwrap();
         let result = database.remove(key);
 
-        Ok(result)
+        match result {
+            None => Ok(None),
+            Some(result) => Ok(Some(result.into())),
+        }
     }
 
-    pub fn try_insert(&self, key: String, value: DbRecord) -> Result<Option<DbRecord>> {
-        let result = self.try_upsert(key, value)?;
+    pub fn try_insert(&self, key: String, value: ValuePost) -> Result<Option<ValueResponse>> {
+        let mut database = self.database.lock().unwrap();
+        database.insert(key.clone(), value.into());
+        let result = database.get(&key).cloned();
 
-        Ok(result)
+        match result {
+            None => Ok(None),
+            Some(result) => Ok(Some(result.into())),
+        }
     }
 
-    pub fn try_select(&self, key: &str) -> Result<Option<DbRecord>> {
+    pub fn try_select(&self, key: &str) -> Result<Option<ValueResponse>> {
         let database = self.database.lock().unwrap();
         let result = database.get(key).cloned();
 
-        Ok(result)
+        match result {
+            None => Ok(None),
+            Some(result) => Ok(Some(result.into())),
+        }
     }
 
-    pub fn try_upsert(&self, key: String, value: DbRecord) -> Result<Option<DbRecord>> {
+    pub fn try_upsert(&self, key: String, value: ValuePut) -> Result<Option<ValueResponse>> {
         let mut database = self.database.lock().unwrap();
-        database.insert(key.clone(), value);
+        database.insert(key.clone(), value.into());
         let result = database.get(&key).cloned();
 
-        Ok(result)
+        match result {
+            None => Ok(None),
+            Some(result) => Ok(Some(result.into())),
+        }
     }
 }
