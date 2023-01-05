@@ -2,7 +2,7 @@ use alex_db_lib::db::Db;
 use axum::{
     error_handling::HandleErrorLayer,
     http::StatusCode,
-    routing::{get, post},
+    routing::{delete, get},
     Router,
 };
 use std::{sync::Arc, time::Duration};
@@ -13,10 +13,11 @@ mod values;
 
 pub async fn router(db: Arc<Db>) -> Router {
     Router::new()
-        .route("/values", post(values::post))
-        .route("/values/:key", get(values::get))
-        //.route("/values", get(values::list).post(values::post))
-        //.route("/values/:key", delete(values::delete).get(values::get).put(values::put))
+        .route("/values", get(values::list).post(values::create))
+        .route(
+            "/values/:key",
+            delete(values::delete).get(values::read).put(values::update),
+        )
         .layer(
             ServiceBuilder::new()
                 .layer(HandleErrorLayer::new(|error: BoxError| async move {

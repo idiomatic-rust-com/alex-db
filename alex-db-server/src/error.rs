@@ -9,15 +9,17 @@ use std::error::Error;
 
 #[derive(Debug)]
 pub enum AppError {
+    Conflict,
     Generic(Box<dyn Error + Send + Sync>),
+    NotFound,
 }
 
 impl IntoResponse for AppError {
     fn into_response(self) -> Response {
         let (status, error_message) = match self {
-            AppError::Generic(_error) => {
-                (StatusCode::INTERNAL_SERVER_ERROR, "Generic error")
-            },
+            AppError::Conflict => (StatusCode::CONFLICT, "Already exists"),
+            AppError::Generic(_error) => (StatusCode::INTERNAL_SERVER_ERROR, "Generic error"),
+            AppError::NotFound => (StatusCode::NOT_FOUND, "Not found"),
         };
 
         let body = Json(json!(ResponseError {

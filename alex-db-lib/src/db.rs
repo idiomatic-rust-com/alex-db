@@ -16,17 +16,42 @@ impl Db {
         }
     }
 
-    pub fn get(&self, key: &str) -> Result<Option<DbRecord>> {
+    pub fn select_all(&self) -> Result<Vec<DbRecord>> {
         let database = self.database.lock().unwrap();
+        let mut result = vec![];
 
+        for (_key, val) in database.iter() {
+            let val = val.clone();
+            result.append(&mut vec![val]);
+        }
+
+        Ok(result)
+    }
+
+    pub fn try_delete(&self, key: &str) -> Result<Option<DbRecord>> {
+        let mut database = self.database.lock().unwrap();
+        let result = database.remove(key);
+
+        Ok(result)
+    }
+
+    pub fn try_insert(&self, key: String, value: DbRecord) -> Result<Option<DbRecord>> {
+        let result = self.try_upsert(key, value)?;
+
+        Ok(result)
+    }
+
+    pub fn try_select(&self, key: &str) -> Result<Option<DbRecord>> {
+        let database = self.database.lock().unwrap();
         let result = database.get(key).cloned();
 
         Ok(result)
     }
 
-    pub fn insert(&self, key: String, value: DbRecord) -> Result<Option<DbRecord>> {
+    pub fn try_upsert(&self, key: String, value: DbRecord) -> Result<Option<DbRecord>> {
         let mut database = self.database.lock().unwrap();
-        let result = database.insert(key, value);
+        database.insert(key.clone(), value);
+        let result = database.get(&key).cloned();
 
         Ok(result)
     }
