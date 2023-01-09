@@ -29,7 +29,7 @@ impl From<ValuePost> for DbRecord {
 
 #[derive(Clone, Debug, Deserialize, Serialize, ToSchema)]
 pub struct ValuePut {
-    key: String,
+    pub key: String,
     value: String,
 }
 
@@ -46,8 +46,8 @@ impl From<ValuePut> for DbRecord {
 
 #[derive(Clone, Debug, Deserialize, Serialize, ToSchema)]
 pub struct ValueResponse {
-    key: String,
-    value: String,
+    pub key: String,
+    pub value: String,
 }
 
 impl From<DbRecord> for ValueResponse {

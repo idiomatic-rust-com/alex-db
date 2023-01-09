@@ -114,7 +114,616 @@ pub async fn update(
 ) -> Result<impl IntoResponse, AppError> {
     db.try_select(&key)?.ok_or(AppError::NotFound)?;
 
+    if key != input.key {
+        return Err(AppError::Conflict);
+    }
+
     let value = db.try_upsert(key, input)?.ok_or(AppError::Conflict)?;
 
     Ok((StatusCode::OK, Json(value)).into_response())
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::app;
+    use alex_db_lib::db_record::ValueResponse;
+    use axum::{
+        body::Body,
+        http::{self, Request, StatusCode},
+    };
+    use fake::{
+        faker::lorem::en::{Paragraph, Word},
+        Fake,
+    };
+    use tower::ServiceExt;
+
+    #[tokio::test]
+    async fn create_201() {
+        let router = app::get_app().await.unwrap();
+
+        let key = Word().fake::<String>();
+        let value = Paragraph(2..10).fake::<String>();
+
+        let response = router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::POST)
+                    .uri("/values")
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .body(Body::from(
+                        serde_json::json!({
+                            "key": &key,
+                            "value": &value
+                        })
+                        .to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::CREATED);
+
+        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+        let body: ValueResponse = serde_json::from_slice(&body).unwrap();
+
+        assert_eq!(body.key, key);
+        assert_eq!(body.value, value);
+    }
+
+    #[tokio::test]
+    async fn create_409() {
+        let router = app::get_app().await.unwrap();
+        let cloned_router = router.clone();
+
+        let key = Word().fake::<String>();
+        let value = Paragraph(2..10).fake::<String>();
+
+        let response = router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::POST)
+                    .uri("/values")
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .body(Body::from(
+                        serde_json::json!({
+                            "key": &key,
+                            "value": &value
+                        })
+                        .to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::CREATED);
+
+        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+        let body: ValueResponse = serde_json::from_slice(&body).unwrap();
+
+        assert_eq!(body.key, key);
+        assert_eq!(body.value, value);
+
+        let value = Paragraph(2..10).fake::<String>();
+
+        let response = cloned_router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::POST)
+                    .uri("/values")
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .body(Body::from(
+                        serde_json::json!({
+                            "key": &key,
+                            "value": &value
+                        })
+                        .to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::CONFLICT);
+    }
+
+    #[tokio::test]
+    async fn delete_204() {
+        let router = app::get_app().await.unwrap();
+        let cloned_router = router.clone();
+
+        let key = Word().fake::<String>();
+        let value = Paragraph(2..10).fake::<String>();
+
+        let response = router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::POST)
+                    .uri("/values")
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .body(Body::from(
+                        serde_json::json!({
+                            "key": &key,
+                            "value": &value
+                        })
+                        .to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::CREATED);
+
+        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+        let body: ValueResponse = serde_json::from_slice(&body).unwrap();
+
+        assert_eq!(body.key, key);
+        assert_eq!(body.value, value);
+
+        let response = cloned_router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::DELETE)
+                    .uri(format!("/values/{}", key))
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::NO_CONTENT);
+    }
+
+    #[tokio::test]
+    async fn delete_404() {
+        let router = app::get_app().await.unwrap();
+        let cloned_router = router.clone();
+        let second_cloned_router = router.clone();
+
+        let key = Word().fake::<String>();
+        let value = Paragraph(2..10).fake::<String>();
+
+        let response = router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::POST)
+                    .uri("/values")
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .body(Body::from(
+                        serde_json::json!({
+                            "key": &key,
+                            "value": &value
+                        })
+                        .to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::CREATED);
+
+        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+        let body: ValueResponse = serde_json::from_slice(&body).unwrap();
+
+        assert_eq!(body.key, key);
+        assert_eq!(body.value, value);
+
+        let response = cloned_router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::DELETE)
+                    .uri(format!("/values/{}", key))
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::NO_CONTENT);
+
+        let response = second_cloned_router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::DELETE)
+                    .uri(format!("/values/{}", key))
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::NOT_FOUND);
+    }
+
+    #[tokio::test]
+    async fn list_one_200() {
+        let router = app::get_app().await.unwrap();
+        let cloned_router = router.clone();
+
+        let key = Word().fake::<String>();
+        let value = Paragraph(2..10).fake::<String>();
+
+        let response = router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::POST)
+                    .uri("/values")
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .body(Body::from(
+                        serde_json::json!({
+                            "key": &key,
+                            "value": &value
+                        })
+                        .to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::CREATED);
+
+        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+        let body: ValueResponse = serde_json::from_slice(&body).unwrap();
+
+        assert_eq!(body.key, key);
+        assert_eq!(body.value, value);
+
+        let response = cloned_router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::GET)
+                    .uri("/values")
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+        let body: Vec<ValueResponse> = serde_json::from_slice(&body).unwrap();
+
+        assert_eq!(body.len(), 1);
+    }
+
+    #[tokio::test]
+    async fn list_two_200() {
+        let router = app::get_app().await.unwrap();
+        let cloned_router = router.clone();
+        let second_cloned_router = router.clone();
+
+        let key = Word().fake::<String>();
+        let value = Paragraph(2..10).fake::<String>();
+
+        let response = router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::POST)
+                    .uri("/values")
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .body(Body::from(
+                        serde_json::json!({
+                            "key": &key,
+                            "value": &value
+                        })
+                        .to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::CREATED);
+
+        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+        let body: ValueResponse = serde_json::from_slice(&body).unwrap();
+
+        assert_eq!(body.key, key);
+        assert_eq!(body.value, value);
+
+        let key = Word().fake::<String>();
+        let value = Paragraph(2..10).fake::<String>();
+
+        let response = cloned_router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::POST)
+                    .uri("/values")
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .body(Body::from(
+                        serde_json::json!({
+                            "key": &key,
+                            "value": &value
+                        })
+                        .to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::CREATED);
+
+        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+        let body: ValueResponse = serde_json::from_slice(&body).unwrap();
+
+        assert_eq!(body.key, key);
+        assert_eq!(body.value, value);
+
+        let response = second_cloned_router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::GET)
+                    .uri("/values")
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+        let body: Vec<ValueResponse> = serde_json::from_slice(&body).unwrap();
+
+        assert_eq!(body.len(), 2);
+    }
+
+    #[tokio::test]
+    async fn list_empty_200() {
+        let router = app::get_app().await.unwrap();
+
+        let response = router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::GET)
+                    .uri("/values")
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+        let body: Vec<ValueResponse> = serde_json::from_slice(&body).unwrap();
+
+        assert_eq!(body.len(), 0);
+    }
+
+    #[tokio::test]
+    async fn read_200() {
+        let router = app::get_app().await.unwrap();
+        let cloned_router = router.clone();
+
+        let key = Word().fake::<String>();
+        let value = Paragraph(2..10).fake::<String>();
+
+        let response = router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::POST)
+                    .uri("/values")
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .body(Body::from(
+                        serde_json::json!({
+                            "key": &key,
+                            "value": &value
+                        })
+                        .to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::CREATED);
+
+        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+        let body: ValueResponse = serde_json::from_slice(&body).unwrap();
+
+        assert_eq!(body.key, key);
+        assert_eq!(body.value, value);
+
+        let response = cloned_router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::GET)
+                    .uri(format!("/values/{}", key))
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+        let body: ValueResponse = serde_json::from_slice(&body).unwrap();
+
+        assert_eq!(body.key, key);
+        assert_eq!(body.value, value);
+    }
+
+    #[tokio::test]
+    async fn read_404() {
+        let router = app::get_app().await.unwrap();
+
+        let key = Word().fake::<String>();
+
+        let response = router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::GET)
+                    .uri(format!("/values/{}", key))
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::NOT_FOUND);
+    }
+
+    #[tokio::test]
+    async fn update_200() {
+        let router = app::get_app().await.unwrap();
+        let cloned_router = router.clone();
+
+        let key = Word().fake::<String>();
+        let value = Paragraph(2..10).fake::<String>();
+
+        let response = router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::POST)
+                    .uri("/values")
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .body(Body::from(
+                        serde_json::json!({
+                            "key": &key,
+                            "value": &value
+                        })
+                        .to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::CREATED);
+
+        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+        let body: ValueResponse = serde_json::from_slice(&body).unwrap();
+
+        assert_eq!(body.key, key);
+        assert_eq!(body.value, value);
+
+        let value = Paragraph(2..10).fake::<String>();
+
+        let response = cloned_router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::PUT)
+                    .uri(format!("/values/{}", key))
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .body(Body::from(
+                        serde_json::json!({
+                            "key": &key,
+                            "value": &value
+                        })
+                        .to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+        let body: ValueResponse = serde_json::from_slice(&body).unwrap();
+
+        assert_eq!(body.key, key);
+        assert_eq!(body.value, value);
+    }
+
+    #[tokio::test]
+    async fn update_404() {
+        let router = app::get_app().await.unwrap();
+
+        let key = Word().fake::<String>();
+        let value = Paragraph(2..10).fake::<String>();
+
+        let response = router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::PUT)
+                    .uri(format!("/values/{}", key))
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .body(Body::from(
+                        serde_json::json!({
+                            "key": &key,
+                            "value": &value
+                        })
+                        .to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::NOT_FOUND);
+    }
+
+    #[tokio::test]
+    async fn update_409() {
+        let router = app::get_app().await.unwrap();
+        let cloned_router = router.clone();
+
+        let key = Word().fake::<String>();
+        let value = Paragraph(2..10).fake::<String>();
+
+        let response = router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::POST)
+                    .uri("/values")
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .body(Body::from(
+                        serde_json::json!({
+                            "key": &key,
+                            "value": &value
+                        })
+                        .to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::CREATED);
+
+        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+        let body: ValueResponse = serde_json::from_slice(&body).unwrap();
+
+        assert_eq!(body.key, key);
+        assert_eq!(body.value, value);
+
+        let value = Paragraph(2..10).fake::<String>();
+
+        let response = cloned_router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::PUT)
+                    .uri(format!("/values/{}", key))
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .body(Body::from(
+                        serde_json::json!({
+                            "key": "wrong-key",
+                            "value": &value
+                        })
+                        .to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::CONFLICT);
+    }
 }
