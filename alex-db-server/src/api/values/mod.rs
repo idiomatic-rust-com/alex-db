@@ -1,7 +1,7 @@
 use crate::error::AppError;
 use alex_db_lib::{
     db::Db,
-    db_record::{ValuePost, ValuePut},
+    value_record::{ValuePost, ValuePut},
 };
 use axum::{
     extract::{Path, State},
@@ -126,7 +126,7 @@ pub async fn update(
 #[cfg(test)]
 mod tests {
     use crate::{app, config::Config};
-    use alex_db_lib::db_record::ValueResponse;
+    use alex_db_lib::value_record::ValueResponse;
     use axum::{
         body::Body,
         http::{self, Request, StatusCode},

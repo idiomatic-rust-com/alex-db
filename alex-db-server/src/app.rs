@@ -5,7 +5,7 @@ use std::sync::Arc;
 
 pub async fn get_app(config: Config) -> Result<Router> {
     let mut db = Db::new(config.data_dir);
-    db.restore();
+    db.restore()?;
     let db = Arc::new(db);
 
     let app = api::router(db).await;

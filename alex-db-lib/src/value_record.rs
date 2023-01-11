@@ -2,23 +2,15 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct DbRecord {
-    key: String,
-    value: String,
-    created_at: DateTime<Utc>,
-    updated_at: DateTime<Utc>,
-}
-
 #[derive(Clone, Debug, Deserialize, Serialize, ToSchema)]
 pub struct ValuePost {
     pub key: String,
     value: String,
 }
 
-impl From<ValuePost> for DbRecord {
+impl From<ValuePost> for ValueRecord {
     fn from(value_post: ValuePost) -> Self {
-        DbRecord {
+        ValueRecord {
             key: value_post.key,
             value: value_post.value,
             created_at: Utc::now(),
@@ -33,9 +25,9 @@ pub struct ValuePut {
     value: String,
 }
 
-impl From<ValuePut> for DbRecord {
+impl From<ValuePut> for ValueRecord {
     fn from(value_put: ValuePut) -> Self {
-        DbRecord {
+        ValueRecord {
             key: value_put.key,
             value: value_put.value,
             created_at: Utc::now(),
@@ -44,14 +36,22 @@ impl From<ValuePut> for DbRecord {
     }
 }
 
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct ValueRecord {
+    key: String,
+    value: String,
+    created_at: DateTime<Utc>,
+    updated_at: DateTime<Utc>,
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize, ToSchema)]
 pub struct ValueResponse {
     pub key: String,
     pub value: String,
 }
 
-impl From<DbRecord> for ValueResponse {
-    fn from(db_record: DbRecord) -> Self {
+impl From<ValueRecord> for ValueResponse {
+    fn from(db_record: ValueRecord) -> Self {
         ValueResponse {
             key: db_record.key,
             value: db_record.value,

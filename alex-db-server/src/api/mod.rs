@@ -1,7 +1,7 @@
 use crate::error::ResponseError;
 use alex_db_lib::{
     db::Db,
-    db_record::{ValuePost, ValuePut, ValueResponse},
+    value_record::{ValuePost, ValuePut, ValueResponse},
 };
 use axum::{
     error_handling::HandleErrorLayer,

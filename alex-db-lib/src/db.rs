@@ -1,5 +1,5 @@
 use crate::{
-    db_record::{DbRecord, ValuePost, ValuePut, ValueResponse},
+    value_record::{ValuePost, ValuePut, ValueRecord, ValueResponse},
     Result,
 };
 use lz4_flex::{compress_prepend_size, decompress_size_prepended};
@@ -13,7 +13,7 @@ use std::{
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Db {
-    pub database: RwLock<HashMap<String, DbRecord>>,
+    pub database: RwLock<HashMap<String, ValueRecord>>,
     data_dir: Option<String>,
 }
 
@@ -25,31 +25,35 @@ impl Db {
         }
     }
 
-    pub fn restore(&mut self) {
-        if let Some(data_dir) = &self.data_dir {
-            let database_file_path: String =
-                format!("{dir}{file}", dir = data_dir, file = "db.dat");
-
-            if Path::new(&database_file_path).exists() {
-                let compressed =
-                    fs::read(database_file_path).expect("Failed to read from database");
-                let uncompressed = decompress_size_prepended(&compressed).unwrap();
-                let serialized =
-                    String::from_utf8(uncompressed).expect("Failed to read from database");
-
-                self.database = serde_json::from_str(&serialized).unwrap();
-            }
-        }
-    }
-
-    pub fn save(&self, database: RwLockWriteGuard<HashMap<String, DbRecord, RandomState>>) {
+    pub fn restore(&mut self) -> Result<()> {
         if let Some(data_dir) = &self.data_dir {
             let database_file_path = format!("{dir}{file}", dir = data_dir, file = "db.dat");
-            let serialized = serde_json::to_vec(&*database).unwrap();
+
+            if Path::new(&database_file_path).exists() {
+                let compressed = fs::read(database_file_path)?;
+                let uncompressed = decompress_size_prepended(&compressed)?;
+                let serialized = String::from_utf8(uncompressed)?;
+
+                self.database = serde_json::from_str(&serialized)?;
+            }
+        }
+
+        Ok(())
+    }
+
+    pub fn save(
+        &self,
+        database: RwLockWriteGuard<HashMap<String, ValueRecord, RandomState>>,
+    ) -> Result<()> {
+        if let Some(data_dir) = &self.data_dir {
+            let database_file_path = format!("{dir}{file}", dir = data_dir, file = "db.dat");
+            let serialized = serde_json::to_vec(&*database)?;
             let compressed = compress_prepend_size(&serialized);
 
-            fs::write(database_file_path, compressed).expect("Failed to write to database");
+            fs::write(database_file_path, compressed)?;
         }
+
+        Ok(())
     }
 
     pub fn select_all(&self) -> Result<Vec<ValueResponse>> {
@@ -78,7 +82,7 @@ impl Db {
         let mut database = self.database.write().unwrap();
         database.insert(key.clone(), value.into());
         let result = database.get(&key).cloned();
-        self.save(database);
+        self.save(database)?;
 
         match result {
             None => Ok(None),
@@ -100,7 +104,7 @@ impl Db {
         let mut database = self.database.write().unwrap();
         database.insert(key.clone(), value.into());
         let result = database.get(&key).cloned();
-        self.save(database);
+        self.save(database)?;
 
         match result {
             None => Ok(None),
