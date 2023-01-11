@@ -8,19 +8,19 @@ use std::{
     collections::{hash_map::RandomState, HashMap},
     fs,
     path::Path,
-    sync::{Mutex, MutexGuard},
+    sync::{RwLock, RwLockWriteGuard},
 };
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Db {
-    pub database: Mutex<HashMap<String, DbRecord>>,
+    pub database: RwLock<HashMap<String, DbRecord>>,
     data_dir: Option<String>,
 }
 
 impl Db {
     pub fn new(data_dir: Option<String>) -> Self {
         Self {
-            database: Mutex::new(HashMap::new()),
+            database: RwLock::new(HashMap::new()),
             data_dir,
         }
     }
@@ -42,7 +42,7 @@ impl Db {
         }
     }
 
-    pub fn save(&self, database: MutexGuard<HashMap<String, DbRecord, RandomState>>) {
+    pub fn save(&self, database: RwLockWriteGuard<HashMap<String, DbRecord, RandomState>>) {
         if let Some(data_dir) = &self.data_dir {
             let database_file_path = format!("{dir}{file}", dir = data_dir, file = "db.dat");
             let serialized = serde_json::to_vec(&*database).unwrap();
@@ -53,7 +53,7 @@ impl Db {
     }
 
     pub fn select_all(&self) -> Result<Vec<ValueResponse>> {
-        let database = self.database.try_lock().unwrap();
+        let database = self.database.read().unwrap();
         let mut result = vec![];
 
         for (_key, val) in database.iter() {
@@ -65,7 +65,7 @@ impl Db {
     }
 
     pub fn try_delete(&self, key: &str) -> Result<Option<ValueResponse>> {
-        let mut database = self.database.try_lock().unwrap();
+        let mut database = self.database.write().unwrap();
         let result = database.remove(key);
 
         match result {
@@ -75,7 +75,7 @@ impl Db {
     }
 
     pub fn try_insert(&self, key: String, value: ValuePost) -> Result<Option<ValueResponse>> {
-        let mut database = self.database.try_lock().unwrap();
+        let mut database = self.database.write().unwrap();
         database.insert(key.clone(), value.into());
         let result = database.get(&key).cloned();
         self.save(database);
@@ -87,7 +87,7 @@ impl Db {
     }
 
     pub fn try_select(&self, key: &str) -> Result<Option<ValueResponse>> {
-        let database = self.database.try_lock().unwrap();
+        let database = self.database.read().unwrap();
         let result = database.get(key).cloned();
 
         match result {
@@ -97,7 +97,7 @@ impl Db {
     }
 
     pub fn try_upsert(&self, key: String, value: ValuePut) -> Result<Option<ValueResponse>> {
-        let mut database = self.database.try_lock().unwrap();
+        let mut database = self.database.write().unwrap();
         database.insert(key.clone(), value.into());
         let result = database.get(&key).cloned();
         self.save(database);

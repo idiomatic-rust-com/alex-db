@@ -125,7 +125,7 @@ pub async fn update(
 
 #[cfg(test)]
 mod tests {
-    use crate::app;
+    use crate::{app, config::Config};
     use alex_db_lib::db_record::ValueResponse;
     use axum::{
         body::Body,
@@ -139,7 +139,11 @@ mod tests {
 
     #[tokio::test]
     async fn create_201() {
-        let router = app::get_app().await.unwrap();
+        let config = Config {
+            data_dir: None,
+            port: 8080,
+        };
+        let router = app::get_app(config).await.unwrap();
 
         let key = Word().fake::<String>();
         let value = Paragraph(2..10).fake::<String>();
@@ -173,7 +177,11 @@ mod tests {
 
     #[tokio::test]
     async fn create_409() {
-        let router = app::get_app().await.unwrap();
+        let config = Config {
+            data_dir: None,
+            port: 8080,
+        };
+        let router = app::get_app(config).await.unwrap();
         let cloned_router = router.clone();
 
         let key = Word().fake::<String>();
@@ -230,7 +238,11 @@ mod tests {
 
     #[tokio::test]
     async fn delete_204() {
-        let router = app::get_app().await.unwrap();
+        let config = Config {
+            data_dir: None,
+            port: 8080,
+        };
+        let router = app::get_app(config).await.unwrap();
         let cloned_router = router.clone();
 
         let key = Word().fake::<String>();
@@ -279,7 +291,11 @@ mod tests {
 
     #[tokio::test]
     async fn delete_404() {
-        let router = app::get_app().await.unwrap();
+        let config = Config {
+            data_dir: None,
+            port: 8080,
+        };
+        let router = app::get_app(config).await.unwrap();
         let cloned_router = router.clone();
         let second_cloned_router = router.clone();
 
@@ -343,7 +359,11 @@ mod tests {
 
     #[tokio::test]
     async fn list_one_200() {
-        let router = app::get_app().await.unwrap();
+        let config = Config {
+            data_dir: None,
+            port: 8080,
+        };
+        let router = app::get_app(config).await.unwrap();
         let cloned_router = router.clone();
 
         let key = Word().fake::<String>();
@@ -397,7 +417,11 @@ mod tests {
 
     #[tokio::test]
     async fn list_two_200() {
-        let router = app::get_app().await.unwrap();
+        let config = Config {
+            data_dir: None,
+            port: 8080,
+        };
+        let router = app::get_app(config).await.unwrap();
         let cloned_router = router.clone();
         let second_cloned_router = router.clone();
 
@@ -481,7 +505,11 @@ mod tests {
 
     #[tokio::test]
     async fn list_empty_200() {
-        let router = app::get_app().await.unwrap();
+        let config = Config {
+            data_dir: None,
+            port: 8080,
+        };
+        let router = app::get_app(config).await.unwrap();
 
         let response = router
             .oneshot(
@@ -505,7 +533,11 @@ mod tests {
 
     #[tokio::test]
     async fn read_200() {
-        let router = app::get_app().await.unwrap();
+        let config = Config {
+            data_dir: None,
+            port: 8080,
+        };
+        let router = app::get_app(config).await.unwrap();
         let cloned_router = router.clone();
 
         let key = Word().fake::<String>();
@@ -560,7 +592,11 @@ mod tests {
 
     #[tokio::test]
     async fn read_404() {
-        let router = app::get_app().await.unwrap();
+        let config = Config {
+            data_dir: None,
+            port: 8080,
+        };
+        let router = app::get_app(config).await.unwrap();
 
         let key = Word().fake::<String>();
 
@@ -581,7 +617,11 @@ mod tests {
 
     #[tokio::test]
     async fn update_200() {
-        let router = app::get_app().await.unwrap();
+        let config = Config {
+            data_dir: None,
+            port: 8080,
+        };
+        let router = app::get_app(config).await.unwrap();
         let cloned_router = router.clone();
 
         let key = Word().fake::<String>();
@@ -644,7 +684,11 @@ mod tests {
 
     #[tokio::test]
     async fn update_404() {
-        let router = app::get_app().await.unwrap();
+        let config = Config {
+            data_dir: None,
+            port: 8080,
+        };
+        let router = app::get_app(config).await.unwrap();
 
         let key = Word().fake::<String>();
         let value = Paragraph(2..10).fake::<String>();
@@ -672,7 +716,11 @@ mod tests {
 
     #[tokio::test]
     async fn update_409() {
-        let router = app::get_app().await.unwrap();
+        let config = Config {
+            data_dir: None,
+            port: 8080,
+        };
+        let router = app::get_app(config).await.unwrap();
         let cloned_router = router.clone();
 
         let key = Word().fake::<String>();
