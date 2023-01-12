@@ -1,6 +1,7 @@
 use crate::error::ResponseError;
 use alex_db_lib::{
     db::Db,
+    stat_record::StatRecord,
     value_record::{ValuePost, ValuePut, ValueResponse},
 };
 use axum::{
@@ -15,6 +16,7 @@ use tower_http::trace::TraceLayer;
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
+mod stats;
 mod values;
 
 pub async fn router(db: Arc<Db>) -> Router {
@@ -30,6 +32,7 @@ pub async fn router(db: Arc<Db>) -> Router {
         components(
             schemas(
                 ResponseError,
+                StatRecord,
                 ValuePost,
                 ValuePut,
                 ValueResponse,
@@ -43,6 +46,7 @@ pub async fn router(db: Arc<Db>) -> Router {
 
     Router::new()
         .merge(SwaggerUi::new("/swagger-ui").url("/api-doc/openapi.json", ApiDoc::openapi()))
+        .route("/stats", get(stats::list))
         .route("/values", get(values::list).post(values::create))
         .route(
             "/values/:key",

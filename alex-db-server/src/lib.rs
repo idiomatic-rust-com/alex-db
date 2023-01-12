@@ -18,6 +18,10 @@ pub struct Args {
     /// Port
     #[arg(short, long)]
     pub port: Option<u16>,
+
+    /// Threshold
+    #[arg(short, long)]
+    pub saved_writes_threshold: Option<u16>,
 }
 
 pub async fn run() -> Result<()> {

@@ -142,6 +142,7 @@ mod tests {
         let config = Config {
             data_dir: None,
             port: 8080,
+            saved_writes_threshold: 8,
         };
         let router = app::get_app(config).await.unwrap();
 
@@ -180,6 +181,7 @@ mod tests {
         let config = Config {
             data_dir: None,
             port: 8080,
+            saved_writes_threshold: 8,
         };
         let router = app::get_app(config).await.unwrap();
         let cloned_router = router.clone();
@@ -241,6 +243,7 @@ mod tests {
         let config = Config {
             data_dir: None,
             port: 8080,
+            saved_writes_threshold: 8,
         };
         let router = app::get_app(config).await.unwrap();
         let cloned_router = router.clone();
@@ -294,6 +297,7 @@ mod tests {
         let config = Config {
             data_dir: None,
             port: 8080,
+            saved_writes_threshold: 8,
         };
         let router = app::get_app(config).await.unwrap();
         let cloned_router = router.clone();
@@ -362,6 +366,7 @@ mod tests {
         let config = Config {
             data_dir: None,
             port: 8080,
+            saved_writes_threshold: 8,
         };
         let router = app::get_app(config).await.unwrap();
         let cloned_router = router.clone();
@@ -420,6 +425,7 @@ mod tests {
         let config = Config {
             data_dir: None,
             port: 8080,
+            saved_writes_threshold: 8,
         };
         let router = app::get_app(config).await.unwrap();
         let cloned_router = router.clone();
@@ -508,6 +514,7 @@ mod tests {
         let config = Config {
             data_dir: None,
             port: 8080,
+            saved_writes_threshold: 8,
         };
         let router = app::get_app(config).await.unwrap();
 
@@ -536,6 +543,7 @@ mod tests {
         let config = Config {
             data_dir: None,
             port: 8080,
+            saved_writes_threshold: 8,
         };
         let router = app::get_app(config).await.unwrap();
         let cloned_router = router.clone();
@@ -595,6 +603,7 @@ mod tests {
         let config = Config {
             data_dir: None,
             port: 8080,
+            saved_writes_threshold: 8,
         };
         let router = app::get_app(config).await.unwrap();
 
@@ -620,6 +629,7 @@ mod tests {
         let config = Config {
             data_dir: None,
             port: 8080,
+            saved_writes_threshold: 8,
         };
         let router = app::get_app(config).await.unwrap();
         let cloned_router = router.clone();
@@ -687,6 +697,7 @@ mod tests {
         let config = Config {
             data_dir: None,
             port: 8080,
+            saved_writes_threshold: 8,
         };
         let router = app::get_app(config).await.unwrap();
 
@@ -719,6 +730,7 @@ mod tests {
         let config = Config {
             data_dir: None,
             port: 8080,
+            saved_writes_threshold: 8,
         };
         let router = app::get_app(config).await.unwrap();
         let cloned_router = router.clone();
