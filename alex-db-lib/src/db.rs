@@ -6,23 +6,54 @@ use crate::{
 use lz4_flex::{compress_prepend_size, decompress_size_prepended};
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, fs, path::Path, sync::RwLock};
+use uuid::Uuid;
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Db {
+    api_keys: RwLock<Vec<Uuid>>,
     data_dir: Option<String>,
+    pub restricted_access: bool,
     saved_writes_threshold: u16,
     pub stats: RwLock<StatRecord>,
     pub values: RwLock<HashMap<String, ValueRecord>>,
 }
 
 impl Db {
-    pub fn new(data_dir: Option<String>, saved_writes_threshold: u16) -> Self {
+    pub fn new(
+        data_dir: Option<String>,
+        restricted_access: bool,
+        saved_writes_threshold: u16,
+    ) -> Self {
         Self {
+            api_keys: RwLock::new(vec![]),
             data_dir,
+            restricted_access,
             saved_writes_threshold,
             stats: RwLock::new(StatRecord::default()),
             values: RwLock::new(HashMap::new()),
         }
+    }
+
+    pub fn api_key_exists(&self, api_key: Uuid) -> Result<bool> {
+        let api_keys = self.api_keys.read().unwrap();
+
+        let result = api_keys.contains(&api_key);
+
+        Ok(result)
+    }
+
+    pub fn api_key_init(&self) -> Result<Option<Uuid>> {
+        let mut api_keys = self.api_keys.write().unwrap();
+
+        if api_keys.is_empty() {
+            let api_key = Uuid::new_v4();
+
+            api_keys.append(&mut vec![api_key]);
+
+            return Ok(Some(api_key));
+        }
+
+        Ok(None)
     }
 
     pub fn get_stats(&self) -> Result<StatRecord> {
@@ -33,7 +64,7 @@ impl Db {
 
     pub fn restore(&mut self) -> Result<()> {
         if let Some(data_dir) = &self.data_dir {
-            let values_file_path = format!("{dir}{file}", dir = data_dir, file = "values.dat");
+            let values_file_path = format!("{}/values.dat", data_dir);
 
             if Path::new(&values_file_path).exists() {
                 let compressed = fs::read(values_file_path)?;
@@ -41,6 +72,16 @@ impl Db {
                 let serialized = String::from_utf8(uncompressed)?;
 
                 self.values = serde_json::from_str(&serialized)?;
+            }
+
+            let api_keys_file_path = format!("{}/api_keys.dat", data_dir);
+
+            if Path::new(&api_keys_file_path).exists() {
+                let compressed = fs::read(api_keys_file_path)?;
+                let uncompressed = decompress_size_prepended(&compressed)?;
+                let serialized = String::from_utf8(uncompressed)?;
+
+                self.api_keys = serde_json::from_str(&serialized)?;
             }
         }
 
@@ -54,11 +95,19 @@ impl Db {
             if stats.can_save(self.saved_writes_threshold) {
                 let values = self.values.read().unwrap();
 
-                let values_file_path = format!("{dir}{file}", dir = data_dir, file = "values.dat");
+                let values_file_path = format!("{}/values.dat", data_dir);
                 let serialized = serde_json::to_vec(&*values)?;
                 let compressed = compress_prepend_size(&serialized);
 
                 fs::write(values_file_path, compressed)?;
+
+                let api_keys = self.api_keys.read().unwrap().to_owned();
+
+                let api_keys_file_path = format!("{}/api_keys.dat", data_dir);
+                let serialized = serde_json::to_vec(&*api_keys)?;
+                let compressed = compress_prepend_size(&serialized);
+
+                fs::write(api_keys_file_path, compressed)?;
 
                 stats.update_saved_writes();
             }

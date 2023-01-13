@@ -1,8 +1,11 @@
 use clap::Parser;
 use std::{error::Error, net::SocketAddr};
+use tracing::info;
+use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 type Result<T> = std::result::Result<T, Box<dyn Error + Send + Sync>>;
 
+mod access;
 mod api;
 mod app;
 mod config;
@@ -19,21 +22,37 @@ pub struct Args {
     #[arg(short, long)]
     pub port: Option<u16>,
 
+    /// Sleep time in miliseconds
+    #[arg(long)]
+    pub saved_writes_sleep: Option<u64>,
+
     /// Threshold
-    #[arg(short, long)]
+    #[arg(long)]
     pub saved_writes_threshold: Option<u16>,
+
+    /// Enable/disable API Key endpoint protection
+    #[arg(short, long)]
+    pub security_api_keys: Option<bool>,
 }
 
 pub async fn run() -> Result<()> {
+    tracing_subscriber::registry()
+        .with(
+            tracing_subscriber::EnvFilter::try_from_default_env()
+                .unwrap_or_else(|_| "alex_db_server=debug,tower_http=debug".into()),
+        )
+        .with(tracing_subscriber::fmt::layer())
+        .init();
+
     let args = Args::parse();
     let config = config::load(args)?;
 
     let app = app::get_app(config.clone()).await?;
 
     let addr = SocketAddr::from(([0, 0, 0, 0], config.port));
-    tracing::debug!("listening on {}", addr);
+    info!("listening on {}", addr);
     axum::Server::bind(&addr)
-        .serve(app.into_make_service())
+        .serve(app.router.into_make_service())
         .await
         .unwrap();
 

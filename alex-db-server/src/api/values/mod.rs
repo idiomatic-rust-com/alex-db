@@ -1,4 +1,4 @@
-use crate::error::AppError;
+use crate::{access::Access, error::AppError};
 use alex_db_lib::{
     db::Db,
     value_record::{ValuePost, ValuePut},
@@ -18,12 +18,19 @@ use std::sync::Arc;
     request_body = ValuePost,
     responses(
         (status = 201, description = "Create value", body = ValueResponse),
+        (status = 401, description = "Unauthorized", body = ResponseError),
+        (status = 409, description = "Conflict", body = ResponseError),
     )
 )]
 pub async fn create(
+    access: Access,
     State(db): State<Arc<Db>>,
     Json(input): Json<ValuePost>,
 ) -> Result<impl IntoResponse, AppError> {
+    if !access.granted() {
+        return Err(AppError::Unauthorized);
+    }
+
     let key = input.key.clone();
     let value = db.try_select(&key)?;
 
@@ -46,13 +53,19 @@ pub async fn create(
     path = "/values/:key",
     responses(
         (status = 204, description = "Delete value"),
+        (status = 401, description = "Unauthorized", body = ResponseError),
         (status = 404, description = "Key not found", body = ResponseError),
     )
 )]
 pub async fn delete(
+    access: Access,
     State(db): State<Arc<Db>>,
     Path(key): Path<String>,
 ) -> Result<impl IntoResponse, AppError> {
+    if !access.granted() {
+        return Err(AppError::Unauthorized);
+    }
+
     db.try_select(&key)?.ok_or(AppError::NotFound)?;
     db.try_delete(&key)?;
 
@@ -65,9 +78,17 @@ pub async fn delete(
     path = "/values",
     responses(
         (status = 200, description = "List of the values", body = [ValueResponse]),
+        (status = 401, description = "Unauthorized", body = ResponseError),
     )
 )]
-pub async fn list(State(db): State<Arc<Db>>) -> Result<impl IntoResponse, AppError> {
+pub async fn list(
+    access: Access,
+    State(db): State<Arc<Db>>,
+) -> Result<impl IntoResponse, AppError> {
+    if !access.granted() {
+        return Err(AppError::Unauthorized);
+    }
+
     let values = db.select_all()?;
 
     Ok((StatusCode::OK, Json(values)).into_response())
@@ -82,13 +103,19 @@ pub async fn list(State(db): State<Arc<Db>>) -> Result<impl IntoResponse, AppErr
     path = "/values/:key",
     responses(
         (status = 200, description = "Read value", body = ValueResponse),
+        (status = 401, description = "Unauthorized", body = ResponseError),
         (status = 404, description = "Key not found", body = ResponseError),
     )
 )]
 pub async fn read(
+    access: Access,
     State(db): State<Arc<Db>>,
     Path(key): Path<String>,
 ) -> Result<impl IntoResponse, AppError> {
+    if !access.granted() {
+        return Err(AppError::Unauthorized);
+    }
+
     let value = db.try_select(&key)?.ok_or(AppError::NotFound)?;
 
     Ok((StatusCode::OK, Json(value)).into_response())
@@ -104,14 +131,20 @@ pub async fn read(
     request_body = ValuePut,
     responses(
         (status = 200, description = "Update value", body = ValueResponse),
+        (status = 401, description = "Unauthorized", body = ResponseError),
         (status = 404, description = "Key not found", body = ResponseError),
     )
 )]
 pub async fn update(
+    access: Access,
     State(db): State<Arc<Db>>,
     Path(key): Path<String>,
     Json(input): Json<ValuePut>,
 ) -> Result<impl IntoResponse, AppError> {
+    if !access.granted() {
+        return Err(AppError::Unauthorized);
+    }
+
     db.try_select(&key)?.ok_or(AppError::NotFound)?;
 
     if key != input.key {
@@ -142,9 +175,12 @@ mod tests {
         let config = Config {
             data_dir: None,
             port: 8080,
+            saved_writes_sleep: 10000,
             saved_writes_threshold: 8,
+            security_api_keys: false,
         };
-        let router = app::get_app(config).await.unwrap();
+        let app = app::get_app(config).await.unwrap();
+        let router = app.router;
 
         let key = Word().fake::<String>();
         let value = Paragraph(2..10).fake::<String>();
@@ -177,13 +213,95 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn create_201_authentication() {
+        let config = Config {
+            data_dir: None,
+            port: 8080,
+            saved_writes_sleep: 10000,
+            saved_writes_threshold: 8,
+            security_api_keys: true,
+        };
+        let app = app::get_app(config).await.unwrap();
+        let router = app.router;
+
+        let key = Word().fake::<String>();
+        let value = Paragraph(2..10).fake::<String>();
+
+        let response = router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::POST)
+                    .uri("/values")
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .header("X-Auth-Token".to_string(), app.api_key.unwrap().to_string())
+                    .body(Body::from(
+                        serde_json::json!({
+                            "key": &key,
+                            "value": &value
+                        })
+                        .to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::CREATED);
+
+        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+        let body: ValueResponse = serde_json::from_slice(&body).unwrap();
+
+        assert_eq!(body.key, key);
+        assert_eq!(body.value, value);
+    }
+
+    #[tokio::test]
+    async fn create_401() {
+        let config = Config {
+            data_dir: None,
+            port: 8080,
+            saved_writes_sleep: 10000,
+            saved_writes_threshold: 8,
+            security_api_keys: true,
+        };
+        let app = app::get_app(config).await.unwrap();
+        let router = app.router;
+
+        let key = Word().fake::<String>();
+        let value = Paragraph(2..10).fake::<String>();
+
+        let response = router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::POST)
+                    .uri("/values")
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .body(Body::from(
+                        serde_json::json!({
+                            "key": &key,
+                            "value": &value
+                        })
+                        .to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
+    }
+
+    #[tokio::test]
     async fn create_409() {
         let config = Config {
             data_dir: None,
             port: 8080,
+            saved_writes_sleep: 10000,
             saved_writes_threshold: 8,
+            security_api_keys: false,
         };
-        let router = app::get_app(config).await.unwrap();
+        let app = app::get_app(config).await.unwrap();
+        let router = app.router;
         let cloned_router = router.clone();
 
         let key = Word().fake::<String>();
@@ -243,9 +361,12 @@ mod tests {
         let config = Config {
             data_dir: None,
             port: 8080,
+            saved_writes_sleep: 10000,
             saved_writes_threshold: 8,
+            security_api_keys: false,
         };
-        let router = app::get_app(config).await.unwrap();
+        let app = app::get_app(config).await.unwrap();
+        let router = app.router;
         let cloned_router = router.clone();
 
         let key = Word().fake::<String>();
@@ -293,13 +414,133 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn delete_204_authentication() {
+        let config = Config {
+            data_dir: None,
+            port: 8080,
+            saved_writes_sleep: 10000,
+            saved_writes_threshold: 8,
+            security_api_keys: true,
+        };
+        let app = app::get_app(config).await.unwrap();
+        let router = app.router;
+        let cloned_router = router.clone();
+
+        let key = Word().fake::<String>();
+        let value = Paragraph(2..10).fake::<String>();
+
+        let response = router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::POST)
+                    .uri("/values")
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .header("X-Auth-Token".to_string(), app.api_key.unwrap().to_string())
+                    .body(Body::from(
+                        serde_json::json!({
+                            "key": &key,
+                            "value": &value
+                        })
+                        .to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::CREATED);
+
+        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+        let body: ValueResponse = serde_json::from_slice(&body).unwrap();
+
+        assert_eq!(body.key, key);
+        assert_eq!(body.value, value);
+
+        let response = cloned_router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::DELETE)
+                    .uri(format!("/values/{}", key))
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .header("X-Auth-Token".to_string(), app.api_key.unwrap().to_string())
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::NO_CONTENT);
+    }
+
+    #[tokio::test]
+    async fn delete_401() {
+        let config = Config {
+            data_dir: None,
+            port: 8080,
+            saved_writes_sleep: 10000,
+            saved_writes_threshold: 8,
+            security_api_keys: true,
+        };
+        let app = app::get_app(config).await.unwrap();
+        let router = app.router;
+        let cloned_router = router.clone();
+
+        let key = Word().fake::<String>();
+        let value = Paragraph(2..10).fake::<String>();
+
+        let response = router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::POST)
+                    .uri("/values")
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .header("X-Auth-Token".to_string(), app.api_key.unwrap().to_string())
+                    .body(Body::from(
+                        serde_json::json!({
+                            "key": &key,
+                            "value": &value
+                        })
+                        .to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::CREATED);
+
+        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+        let body: ValueResponse = serde_json::from_slice(&body).unwrap();
+
+        assert_eq!(body.key, key);
+        assert_eq!(body.value, value);
+
+        let response = cloned_router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::DELETE)
+                    .uri(format!("/values/{}", key))
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
+    }
+
+    #[tokio::test]
     async fn delete_404() {
         let config = Config {
             data_dir: None,
             port: 8080,
+            saved_writes_sleep: 10000,
             saved_writes_threshold: 8,
+            security_api_keys: false,
         };
-        let router = app::get_app(config).await.unwrap();
+        let app = app::get_app(config).await.unwrap();
+        let router = app.router;
         let cloned_router = router.clone();
         let second_cloned_router = router.clone();
 
@@ -366,9 +607,12 @@ mod tests {
         let config = Config {
             data_dir: None,
             port: 8080,
+            saved_writes_sleep: 10000,
             saved_writes_threshold: 8,
+            security_api_keys: false,
         };
-        let router = app::get_app(config).await.unwrap();
+        let app = app::get_app(config).await.unwrap();
+        let router = app.router;
         let cloned_router = router.clone();
 
         let key = Word().fake::<String>();
@@ -425,9 +669,12 @@ mod tests {
         let config = Config {
             data_dir: None,
             port: 8080,
+            saved_writes_sleep: 10000,
             saved_writes_threshold: 8,
+            security_api_keys: false,
         };
-        let router = app::get_app(config).await.unwrap();
+        let app = app::get_app(config).await.unwrap();
+        let router = app.router;
         let cloned_router = router.clone();
         let second_cloned_router = router.clone();
 
@@ -514,9 +761,12 @@ mod tests {
         let config = Config {
             data_dir: None,
             port: 8080,
+            saved_writes_sleep: 10000,
             saved_writes_threshold: 8,
+            security_api_keys: false,
         };
-        let router = app::get_app(config).await.unwrap();
+        let app = app::get_app(config).await.unwrap();
+        let router = app.router;
 
         let response = router
             .oneshot(
@@ -539,13 +789,76 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn list_empty_200_authentication() {
+        let config = Config {
+            data_dir: None,
+            port: 8080,
+            saved_writes_sleep: 10000,
+            saved_writes_threshold: 8,
+            security_api_keys: true,
+        };
+        let app = app::get_app(config).await.unwrap();
+        let router = app.router;
+
+        let response = router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::GET)
+                    .uri("/values")
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .header("X-Auth-Token".to_string(), app.api_key.unwrap().to_string())
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+        let body: Vec<ValueResponse> = serde_json::from_slice(&body).unwrap();
+
+        assert_eq!(body.len(), 0);
+    }
+
+    #[tokio::test]
+    async fn list_empty_401() {
+        let config = Config {
+            data_dir: None,
+            port: 8080,
+            saved_writes_sleep: 10000,
+            saved_writes_threshold: 8,
+            security_api_keys: true,
+        };
+        let app = app::get_app(config).await.unwrap();
+        let router = app.router;
+
+        let response = router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::GET)
+                    .uri("/values")
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
+    }
+
+    #[tokio::test]
     async fn read_200() {
         let config = Config {
             data_dir: None,
             port: 8080,
+            saved_writes_sleep: 10000,
             saved_writes_threshold: 8,
+            security_api_keys: false,
         };
-        let router = app::get_app(config).await.unwrap();
+        let app = app::get_app(config).await.unwrap();
+        let router = app.router;
         let cloned_router = router.clone();
 
         let key = Word().fake::<String>();
@@ -599,13 +912,139 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn read_200_authentication() {
+        let config = Config {
+            data_dir: None,
+            port: 8080,
+            saved_writes_sleep: 10000,
+            saved_writes_threshold: 8,
+            security_api_keys: true,
+        };
+        let app = app::get_app(config).await.unwrap();
+        let router = app.router;
+        let cloned_router = router.clone();
+
+        let key = Word().fake::<String>();
+        let value = Paragraph(2..10).fake::<String>();
+
+        let response = router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::POST)
+                    .uri("/values")
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .header("X-Auth-Token".to_string(), app.api_key.unwrap().to_string())
+                    .body(Body::from(
+                        serde_json::json!({
+                            "key": &key,
+                            "value": &value
+                        })
+                        .to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::CREATED);
+
+        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+        let body: ValueResponse = serde_json::from_slice(&body).unwrap();
+
+        assert_eq!(body.key, key);
+        assert_eq!(body.value, value);
+
+        let response = cloned_router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::GET)
+                    .uri(format!("/values/{}", key))
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .header("X-Auth-Token".to_string(), app.api_key.unwrap().to_string())
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+        let body: ValueResponse = serde_json::from_slice(&body).unwrap();
+
+        assert_eq!(body.key, key);
+        assert_eq!(body.value, value);
+    }
+
+    #[tokio::test]
+    async fn read_401() {
+        let config = Config {
+            data_dir: None,
+            port: 8080,
+            saved_writes_sleep: 10000,
+            saved_writes_threshold: 8,
+            security_api_keys: true,
+        };
+        let app = app::get_app(config).await.unwrap();
+        let router = app.router;
+        let cloned_router = router.clone();
+
+        let key = Word().fake::<String>();
+        let value = Paragraph(2..10).fake::<String>();
+
+        let response = router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::POST)
+                    .uri("/values")
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .header("X-Auth-Token".to_string(), app.api_key.unwrap().to_string())
+                    .body(Body::from(
+                        serde_json::json!({
+                            "key": &key,
+                            "value": &value
+                        })
+                        .to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::CREATED);
+
+        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+        let body: ValueResponse = serde_json::from_slice(&body).unwrap();
+
+        assert_eq!(body.key, key);
+        assert_eq!(body.value, value);
+
+        let response = cloned_router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::GET)
+                    .uri(format!("/values/{}", key))
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
+    }
+
+    #[tokio::test]
     async fn read_404() {
         let config = Config {
             data_dir: None,
             port: 8080,
+            saved_writes_sleep: 10000,
             saved_writes_threshold: 8,
+            security_api_keys: false,
         };
-        let router = app::get_app(config).await.unwrap();
+        let app = app::get_app(config).await.unwrap();
+        let router = app.router;
 
         let key = Word().fake::<String>();
 
@@ -629,9 +1068,12 @@ mod tests {
         let config = Config {
             data_dir: None,
             port: 8080,
+            saved_writes_sleep: 10000,
             saved_writes_threshold: 8,
+            security_api_keys: false,
         };
-        let router = app::get_app(config).await.unwrap();
+        let app = app::get_app(config).await.unwrap();
+        let router = app.router;
         let cloned_router = router.clone();
 
         let key = Word().fake::<String>();
@@ -693,13 +1135,155 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn update_200_authentication() {
+        let config = Config {
+            data_dir: None,
+            port: 8080,
+            saved_writes_sleep: 10000,
+            saved_writes_threshold: 8,
+            security_api_keys: true,
+        };
+        let app = app::get_app(config).await.unwrap();
+        let router = app.router;
+        let cloned_router = router.clone();
+
+        let key = Word().fake::<String>();
+        let value = Paragraph(2..10).fake::<String>();
+
+        let response = router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::POST)
+                    .uri("/values")
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .header("X-Auth-Token".to_string(), app.api_key.unwrap().to_string())
+                    .body(Body::from(
+                        serde_json::json!({
+                            "key": &key,
+                            "value": &value
+                        })
+                        .to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::CREATED);
+
+        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+        let body: ValueResponse = serde_json::from_slice(&body).unwrap();
+
+        assert_eq!(body.key, key);
+        assert_eq!(body.value, value);
+
+        let value = Paragraph(2..10).fake::<String>();
+
+        let response = cloned_router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::PUT)
+                    .uri(format!("/values/{}", key))
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .header("X-Auth-Token".to_string(), app.api_key.unwrap().to_string())
+                    .body(Body::from(
+                        serde_json::json!({
+                            "key": &key,
+                            "value": &value
+                        })
+                        .to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+        let body: ValueResponse = serde_json::from_slice(&body).unwrap();
+
+        assert_eq!(body.key, key);
+        assert_eq!(body.value, value);
+    }
+
+    #[tokio::test]
+    async fn update_401() {
+        let config = Config {
+            data_dir: None,
+            port: 8080,
+            saved_writes_sleep: 10000,
+            saved_writes_threshold: 8,
+            security_api_keys: true,
+        };
+        let app = app::get_app(config).await.unwrap();
+        let router = app.router;
+        let cloned_router = router.clone();
+
+        let key = Word().fake::<String>();
+        let value = Paragraph(2..10).fake::<String>();
+
+        let response = router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::POST)
+                    .uri("/values")
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .header("X-Auth-Token".to_string(), app.api_key.unwrap().to_string())
+                    .body(Body::from(
+                        serde_json::json!({
+                            "key": &key,
+                            "value": &value
+                        })
+                        .to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::CREATED);
+
+        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+        let body: ValueResponse = serde_json::from_slice(&body).unwrap();
+
+        assert_eq!(body.key, key);
+        assert_eq!(body.value, value);
+
+        let value = Paragraph(2..10).fake::<String>();
+
+        let response = cloned_router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::PUT)
+                    .uri(format!("/values/{}", key))
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .body(Body::from(
+                        serde_json::json!({
+                            "key": &key,
+                            "value": &value
+                        })
+                        .to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
+    }
+
+    #[tokio::test]
     async fn update_404() {
         let config = Config {
             data_dir: None,
             port: 8080,
+            saved_writes_sleep: 10000,
             saved_writes_threshold: 8,
+            security_api_keys: false,
         };
-        let router = app::get_app(config).await.unwrap();
+        let app = app::get_app(config).await.unwrap();
+        let router = app.router;
 
         let key = Word().fake::<String>();
         let value = Paragraph(2..10).fake::<String>();
@@ -730,9 +1314,12 @@ mod tests {
         let config = Config {
             data_dir: None,
             port: 8080,
+            saved_writes_sleep: 10000,
             saved_writes_threshold: 8,
+            security_api_keys: false,
         };
-        let router = app::get_app(config).await.unwrap();
+        let app = app::get_app(config).await.unwrap();
+        let router = app.router;
         let cloned_router = router.clone();
 
         let key = Word().fake::<String>();
