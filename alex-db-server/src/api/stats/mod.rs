@@ -42,6 +42,7 @@ mod tests {
             port: 8080,
             saved_writes_sleep: 10000,
             saved_writes_threshold: 8,
+            saved_writes_trigger_after: 60000,
             security_api_keys: false,
         };
         let app = app::get_app(config).await.unwrap();
@@ -77,6 +78,7 @@ mod tests {
             port: 8080,
             saved_writes_sleep: 10000,
             saved_writes_threshold: 8,
+            saved_writes_trigger_after: 60000,
             security_api_keys: true,
         };
         let app = app::get_app(config).await.unwrap();
@@ -113,6 +115,7 @@ mod tests {
             port: 8080,
             saved_writes_sleep: 10000,
             saved_writes_threshold: 8,
+            saved_writes_trigger_after: 60000,
             security_api_keys: true,
         };
         let app = app::get_app(config).await.unwrap();

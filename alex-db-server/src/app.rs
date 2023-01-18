@@ -20,6 +20,7 @@ pub async fn get_app(config: Config) -> Result<App> {
         config.data_dir,
         restricted_access,
         config.saved_writes_threshold,
+        config.saved_writes_trigger_after,
     );
     db.restore()?;
     let mut api_key = None;

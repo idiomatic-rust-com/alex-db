@@ -15,6 +15,7 @@ pub struct Db {
     data_dir: Option<String>,
     pub restricted_access: bool,
     saved_writes_threshold: u16,
+    saved_writes_trigger_after: i64,
     pub stats: RwLock<StatRecord>,
     pub values: RwLock<HashMap<String, ValueRecord>>,
 }
@@ -24,12 +25,14 @@ impl Db {
         data_dir: Option<String>,
         restricted_access: bool,
         saved_writes_threshold: u16,
+        saved_writes_trigger_after: i64,
     ) -> Self {
         Self {
             api_keys: RwLock::new(vec![]),
             data_dir,
             restricted_access,
             saved_writes_threshold,
+            saved_writes_trigger_after,
             stats: RwLock::new(StatRecord::default()),
             values: RwLock::new(HashMap::new()),
         }
@@ -88,7 +91,7 @@ impl Db {
         if let Some(data_dir) = &self.data_dir {
             let mut stats = self.stats.write().unwrap();
 
-            if stats.can_save(self.saved_writes_threshold) {
+            if stats.can_save(self.saved_writes_threshold, self.saved_writes_trigger_after) {
                 let values = self.values.read().unwrap();
                 let values_file_path = format!("{}/values.dat", data_dir);
                 let serialized = serde_json::to_vec(&*values)?;

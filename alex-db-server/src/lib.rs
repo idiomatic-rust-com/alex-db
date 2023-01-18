@@ -30,6 +30,10 @@ pub struct Args {
     #[arg(long)]
     pub saved_writes_threshold: Option<u16>,
 
+    /// Trigger write after
+    #[arg(long)]
+    pub saved_writes_trigger_after: Option<i64>,
+
     /// Enable/disable API Key endpoint protection
     #[arg(short, long)]
     pub security_api_keys: Option<bool>,

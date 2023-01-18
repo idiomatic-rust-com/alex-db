@@ -7,6 +7,7 @@ pub struct Config {
     pub port: u16,
     pub saved_writes_sleep: u64,
     pub saved_writes_threshold: u16,
+    pub saved_writes_trigger_after: i64,
     pub security_api_keys: bool,
 }
 
@@ -16,6 +17,7 @@ impl Config {
         port: u16,
         saved_writes_sleep: u64,
         saved_writes_threshold: u16,
+        saved_writes_trigger_after: i64,
         security_api_keys: bool,
     ) -> Self {
         Self {
@@ -23,6 +25,7 @@ impl Config {
             port,
             saved_writes_sleep,
             saved_writes_threshold,
+            saved_writes_trigger_after,
             security_api_keys,
         }
     }
@@ -33,6 +36,7 @@ pub fn load(args: Args) -> Result<Config> {
     let mut port = 8080;
     let mut saved_writes_sleep = 10000;
     let mut saved_writes_threshold = 8;
+    let mut saved_writes_trigger_after = 600000;
     let mut security_api_keys = true;
 
     match std::env::var("ALEX_DB_DATA_DIR") {
@@ -81,6 +85,18 @@ pub fn load(args: Args) -> Result<Config> {
         Some(val) => saved_writes_threshold = val,
     }
 
+    match std::env::var("ALEX_DB_SAVED_WRITES_TRIGGER_AFTER") {
+        Err(_) => {}
+        Ok(val) => {
+            saved_writes_trigger_after = val.parse::<i64>()?;
+        }
+    }
+
+    match args.saved_writes_trigger_after {
+        None => {}
+        Some(val) => saved_writes_trigger_after = val,
+    }
+
     match std::env::var("ALEX_DB_SECURITY_API_KEYS") {
         Err(_) => {}
         Ok(val) => {
@@ -97,6 +113,10 @@ pub fn load(args: Args) -> Result<Config> {
     info!("port = {}", port);
     info!("saved_writes_sleep = {}", saved_writes_sleep);
     info!("saved_writes_threshold = {}", saved_writes_threshold);
+    info!(
+        "saved_writes_trigger_after = {}",
+        saved_writes_trigger_after
+    );
     info!("security_api_keys = {}", security_api_keys);
 
     Ok(Config::new(
@@ -104,6 +124,7 @@ pub fn load(args: Args) -> Result<Config> {
         port,
         saved_writes_sleep,
         saved_writes_threshold,
+        saved_writes_trigger_after,
         security_api_keys,
     ))
 }
