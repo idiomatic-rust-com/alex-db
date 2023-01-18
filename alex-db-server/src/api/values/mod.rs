@@ -145,11 +145,11 @@ pub async fn update(
         return Err(AppError::Unauthorized);
     }
 
-    db.try_select(&key)?.ok_or(AppError::NotFound)?;
-
     if key != input.key {
         return Err(AppError::Conflict);
     }
+
+    db.try_select(&key)?.ok_or(AppError::NotFound)?;
 
     let value = db.try_upsert(key, input)?.ok_or(AppError::Conflict)?;
 

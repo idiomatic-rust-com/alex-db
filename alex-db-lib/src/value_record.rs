@@ -1,6 +1,7 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
+use uuid::Uuid;
 
 #[derive(Clone, Debug, Deserialize, Serialize, ToSchema)]
 pub struct ValuePost {
@@ -11,6 +12,7 @@ pub struct ValuePost {
 impl From<ValuePost> for ValueRecord {
     fn from(value_post: ValuePost) -> Self {
         ValueRecord {
+            id: Uuid::new_v4(),
             key: value_post.key,
             value: value_post.value,
             created_at: Utc::now(),
@@ -28,6 +30,7 @@ pub struct ValuePut {
 impl From<ValuePut> for ValueRecord {
     fn from(value_put: ValuePut) -> Self {
         ValueRecord {
+            id: Uuid::new_v4(),
             key: value_put.key,
             value: value_put.value,
             created_at: Utc::now(),
@@ -38,9 +41,10 @@ impl From<ValuePut> for ValueRecord {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct ValueRecord {
+    pub id: Uuid,
     key: String,
     value: String,
-    created_at: DateTime<Utc>,
+    pub created_at: DateTime<Utc>,
     updated_at: DateTime<Utc>,
 }
 
