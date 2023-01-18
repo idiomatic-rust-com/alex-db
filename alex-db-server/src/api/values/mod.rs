@@ -1,16 +1,28 @@
 use crate::{access::Access, error::AppError};
 use alex_db_lib::{
-    db::Db,
+    db::{Db, Direction, Sort},
     value_record::{ValuePost, ValuePut},
 };
 use axum::{
-    extract::{Path, State},
+    extract::{Path, Query, State},
     http::StatusCode,
     response::IntoResponse,
     Json,
 };
+use chrono::{DateTime, Utc};
+use serde::Deserialize;
 use std::sync::Arc;
 use validator::Validate;
+
+#[derive(Debug, Deserialize)]
+pub struct QueryParams {
+    pub direction: Option<Direction>,
+    pub ends_at: Option<DateTime<Utc>>,
+    pub limit: Option<u32>,
+    pub page: Option<u32>,
+    pub sort: Option<Sort>,
+    pub starts_at: Option<DateTime<Utc>>,
+}
 
 #[axum_macros::debug_handler]
 #[utoipa::path(
@@ -86,12 +98,17 @@ pub async fn delete(
 pub async fn list(
     access: Access,
     State(db): State<Arc<Db>>,
+    query_params: Query<QueryParams>,
 ) -> Result<impl IntoResponse, AppError> {
     if !access.granted() {
         return Err(AppError::Unauthorized);
     }
 
-    let values = db.select_all()?;
+    let Query(query_params) = query_params;
+    let direction = query_params.direction.unwrap_or(Direction::Asc);
+    let sort = query_params.sort.unwrap_or(Sort::CreatedAt);
+
+    let values = db.select_all(direction, sort)?;
 
     Ok((StatusCode::OK, Json(values)).into_response())
 }
