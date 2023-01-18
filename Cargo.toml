@@ -1,0 +1,6 @@
+[workspace]
+members = [
+    "alex-db-client",
+    "alex-db-lib",
+    "alex-db-server",
+]
