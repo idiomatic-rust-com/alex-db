@@ -1,10 +1,18 @@
 use chrono::{DateTime, Utc};
+use lazy_static::lazy_static;
+use regex::Regex;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use uuid::Uuid;
+use validator::Validate;
 
-#[derive(Clone, Debug, Deserialize, Serialize, ToSchema)]
+lazy_static! {
+    static ref VALID_KEY: Regex = Regex::new(r"^[a-zA-Z0-9._~!$&'()*+,;=:@/?-]+$").unwrap();
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, ToSchema, Validate)]
 pub struct ValuePost {
+    #[validate(regex = "VALID_KEY")]
     pub key: String,
     value: String,
 }
@@ -21,8 +29,9 @@ impl From<ValuePost> for ValueRecord {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize, ToSchema)]
+#[derive(Clone, Debug, Deserialize, Serialize, ToSchema, Validate)]
 pub struct ValuePut {
+    #[validate(regex = "VALID_KEY")]
     pub key: String,
     value: String,
 }

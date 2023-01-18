@@ -8,6 +8,7 @@ use serde::Serialize;
 use serde_json::json;
 use std::error::Error;
 use utoipa::ToSchema;
+use validator::ValidationErrors;
 
 #[derive(Debug)]
 pub enum AppError {
@@ -17,6 +18,7 @@ pub enum AppError {
     NotFound,
     Unauthorized,
     Uuid(uuid::Error),
+    Validation(ValidationErrors),
 }
 
 impl IntoResponse for AppError {
@@ -28,6 +30,7 @@ impl IntoResponse for AppError {
             AppError::NotFound => (StatusCode::NOT_FOUND, "Not found"),
             AppError::Unauthorized => (StatusCode::UNAUTHORIZED, "Unauthorized"),
             AppError::Uuid(_error) => (StatusCode::BAD_REQUEST, "Invalid api key"),
+            AppError::Validation(_error) => (StatusCode::BAD_REQUEST, "Invalid key"),
         };
 
         let body = Json(json!(ResponseError {
@@ -53,6 +56,12 @@ impl From<ToStrError> for AppError {
 impl From<uuid::Error> for AppError {
     fn from(inner: uuid::Error) -> Self {
         AppError::Uuid(inner)
+    }
+}
+
+impl From<ValidationErrors> for AppError {
+    fn from(inner: ValidationErrors) -> Self {
+        AppError::Validation(inner)
     }
 }
 

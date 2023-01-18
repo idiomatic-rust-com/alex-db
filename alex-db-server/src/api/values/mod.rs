@@ -10,6 +10,7 @@ use axum::{
     Json,
 };
 use std::sync::Arc;
+use validator::Validate;
 
 #[axum_macros::debug_handler]
 #[utoipa::path(
@@ -31,6 +32,7 @@ pub async fn create(
         return Err(AppError::Unauthorized);
     }
 
+    input.validate()?;
     let key = input.key.clone();
     let value = db.try_select(&key)?;
 
@@ -145,6 +147,7 @@ pub async fn update(
         return Err(AppError::Unauthorized);
     }
 
+    input.validate()?;
     if key != input.key {
         return Err(AppError::Conflict);
     }
