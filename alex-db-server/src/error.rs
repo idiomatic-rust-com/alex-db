@@ -24,7 +24,7 @@ pub enum AppError {
 impl IntoResponse for AppError {
     fn into_response(self) -> Response {
         let (status, error_message) = match self {
-            AppError::Conflict => (StatusCode::CONFLICT, "Already exists"),
+            AppError::Conflict => (StatusCode::CONFLICT, "Conflict"),
             AppError::Generic(_error) => (StatusCode::INTERNAL_SERVER_ERROR, "Generic error"),
             AppError::Header(_error) => (StatusCode::BAD_REQUEST, "Invalid header"),
             AppError::NotFound => (StatusCode::NOT_FOUND, "Not found"),

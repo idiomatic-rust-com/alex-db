@@ -14,38 +14,14 @@ lazy_static! {
 pub struct ValuePost {
     #[validate(regex = "VALID_KEY")]
     pub key: String,
-    value: String,
-}
-
-impl From<ValuePost> for ValueRecord {
-    fn from(value_post: ValuePost) -> Self {
-        ValueRecord {
-            id: Uuid::new_v4(),
-            key: value_post.key,
-            value: value_post.value,
-            created_at: Utc::now(),
-            updated_at: Utc::now(),
-        }
-    }
+    pub value: String,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, ToSchema, Validate)]
 pub struct ValuePut {
     #[validate(regex = "VALID_KEY")]
     pub key: String,
-    value: String,
-}
-
-impl From<ValuePut> for ValueRecord {
-    fn from(value_put: ValuePut) -> Self {
-        ValueRecord {
-            id: Uuid::new_v4(),
-            key: value_put.key,
-            value: value_put.value,
-            created_at: Utc::now(),
-            updated_at: Utc::now(),
-        }
-    }
+    pub value: String,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -55,6 +31,24 @@ pub struct ValueRecord {
     value: String,
     pub created_at: DateTime<Utc>,
     updated_at: DateTime<Utc>,
+}
+
+impl ValueRecord {
+    pub fn new(
+        id: Uuid,
+        key: &str,
+        value: &str,
+        created_at: DateTime<Utc>,
+        updated_at: DateTime<Utc>,
+    ) -> Self {
+        Self {
+            id,
+            key: key.into(),
+            value: value.into(),
+            created_at,
+            updated_at,
+        }
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, ToSchema)]

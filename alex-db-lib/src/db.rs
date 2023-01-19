@@ -5,10 +5,16 @@ use crate::{
     value_record::{ValuePost, ValuePut, ValueRecord, ValueResponse},
     Result,
 };
+use chrono::Utc;
 use lz4_flex::{compress_prepend_size, decompress_size_prepended};
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, fs, path::Path, sync::RwLock};
 use uuid::Uuid;
+
+pub const API_KEYS_FILE: &str = "api_keys.sec";
+pub const CREATED_AT_INDEX_FILE: &str = "created_at.idx";
+pub const DATABASE_FILE: &str = "values.db";
+pub const KEY_INDEX_FILE: &str = "key.idx";
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Db {
@@ -19,7 +25,7 @@ pub struct Db {
     saved_writes_threshold: u16,
     saved_writes_trigger_after: i64,
     pub stats: RwLock<StatRecord>,
-    pub values: RwLock<HashMap<String, ValueRecord>>,
+    pub values: RwLock<HashMap<Uuid, ValueRecord>>,
 }
 
 impl Db {
@@ -70,7 +76,7 @@ impl Db {
 
     pub fn restore(&mut self) -> Result<()> {
         if let Some(data_dir) = &self.data_dir {
-            let values_file_path = format!("{}/values.dat", data_dir);
+            let values_file_path = format!("{}/{}", data_dir, DATABASE_FILE);
             if Path::new(&values_file_path).exists() {
                 let compressed = fs::read(values_file_path)?;
                 let uncompressed = decompress_size_prepended(&compressed)?;
@@ -78,7 +84,7 @@ impl Db {
                 self.values = serde_json::from_str(&serialized)?;
             }
 
-            let api_keys_file_path = format!("{}/api_keys.dat", data_dir);
+            let api_keys_file_path = format!("{}/{}", data_dir, API_KEYS_FILE);
             if Path::new(&api_keys_file_path).exists() {
                 let compressed = fs::read(api_keys_file_path)?;
                 let uncompressed = decompress_size_prepended(&compressed)?;
@@ -86,12 +92,20 @@ impl Db {
                 self.api_keys = serde_json::from_str(&serialized)?;
             }
 
-            let created_at_file_path = format!("{}/created_at_index.dat", data_dir);
-            if Path::new(&created_at_file_path).exists() {
-                let compressed = fs::read(created_at_file_path)?;
+            let created_at_index_file_path = format!("{}/{}", data_dir, CREATED_AT_INDEX_FILE);
+            if Path::new(&created_at_index_file_path).exists() {
+                let compressed = fs::read(created_at_index_file_path)?;
                 let uncompressed = decompress_size_prepended(&compressed)?;
                 let serialized = String::from_utf8(uncompressed)?;
                 self.indexes.created_at = serde_json::from_str(&serialized)?;
+            }
+
+            let key_index_file_path = format!("{}/{}", data_dir, KEY_INDEX_FILE);
+            if Path::new(&key_index_file_path).exists() {
+                let compressed = fs::read(key_index_file_path)?;
+                let uncompressed = decompress_size_prepended(&compressed)?;
+                let serialized = String::from_utf8(uncompressed)?;
+                self.indexes.key = serde_json::from_str(&serialized)?;
             }
         }
 
@@ -104,22 +118,28 @@ impl Db {
 
             if stats.can_save(self.saved_writes_threshold, self.saved_writes_trigger_after) {
                 let values = self.values.read().unwrap();
-                let values_file_path = format!("{}/values.dat", data_dir);
+                let values_file_path = format!("{}/{}", data_dir, DATABASE_FILE);
                 let serialized = serde_json::to_vec(&*values)?;
                 let compressed = compress_prepend_size(&serialized);
                 fs::write(values_file_path, compressed)?;
 
                 let api_keys = self.api_keys.read().unwrap().to_owned();
-                let api_keys_file_path = format!("{}/api_keys.dat", data_dir);
+                let api_keys_file_path = format!("{}/{}", data_dir, API_KEYS_FILE);
                 let serialized = serde_json::to_vec(&*api_keys)?;
                 let compressed = compress_prepend_size(&serialized);
                 fs::write(api_keys_file_path, compressed)?;
 
-                let created_at = self.indexes.created_at.read().unwrap();
-                let created_at_file_path = format!("{}/created_at_index.dat", data_dir);
-                let serialized = serde_json::to_vec(&*created_at)?;
+                let created_at_index = self.indexes.created_at.read().unwrap();
+                let created_at_index_file_path = format!("{}/{}", data_dir, CREATED_AT_INDEX_FILE);
+                let serialized = serde_json::to_vec(&*created_at_index)?;
                 let compressed = compress_prepend_size(&serialized);
-                fs::write(created_at_file_path, compressed)?;
+                fs::write(created_at_index_file_path, compressed)?;
+
+                let key_index = self.indexes.key.read().unwrap();
+                let key_index_file_path = format!("{}/{}", data_dir, KEY_INDEX_FILE);
+                let serialized = serde_json::to_vec(&*key_index)?;
+                let compressed = compress_prepend_size(&serialized);
+                fs::write(key_index_file_path, compressed)?;
 
                 stats.update_saved_writes();
             }
@@ -138,17 +158,33 @@ impl Db {
 
         match sort {
             Sort::CreatedAt => {
-                let created_at = self.indexes.created_at.read().unwrap();
+                let created_at_index = self.indexes.created_at.read().unwrap();
 
                 match direction {
                     Direction::Asc => {
-                        for (_key, value) in created_at.iter() {
-                            ids.append(&mut vec![value.clone()]);
+                        for (_key, value) in created_at_index.iter() {
+                            ids.append(&mut vec![*value]);
                         }
                     }
                     Direction::Desc => {
-                        for (_key, value) in created_at.iter().rev() {
-                            ids.append(&mut vec![value.clone()]);
+                        for (_key, value) in created_at_index.iter().rev() {
+                            ids.append(&mut vec![*value]);
+                        }
+                    }
+                }
+            }
+            Sort::Key => {
+                let key_index = self.indexes.key.read().unwrap();
+
+                match direction {
+                    Direction::Asc => {
+                        for (_key, value) in key_index.iter() {
+                            ids.append(&mut vec![*value]);
+                        }
+                    }
+                    Direction::Desc => {
+                        for (_key, value) in key_index.iter().rev() {
+                            ids.append(&mut vec![*value]);
                         }
                     }
                 }
@@ -168,8 +204,11 @@ impl Db {
         let mut stats = self.stats.write().unwrap();
         stats.inc_requests();
 
+        let key_index = self.indexes.key.read().unwrap();
+        let id = *key_index.get(key).unwrap();
+
         let mut values = self.values.write().unwrap();
-        let result = values.remove(key);
+        let result = values.remove(&id);
 
         match result {
             None => Ok(None),
@@ -181,13 +220,21 @@ impl Db {
         }
     }
 
-    pub fn try_insert(&self, key: String, value: ValuePost) -> Result<Option<ValueResponse>> {
+    pub fn try_insert(&self, value_post: ValuePost) -> Result<Option<ValueResponse>> {
         let mut stats = self.stats.write().unwrap();
         stats.inc_requests();
 
         let mut values = self.values.write().unwrap();
-        values.insert(key.clone(), value.into());
-        let result = values.get(&key).cloned();
+        let id = Uuid::new_v4();
+        let value_record = ValueRecord::new(
+            id,
+            &value_post.key,
+            &value_post.value,
+            Utc::now(),
+            Utc::now(),
+        );
+        values.insert(id, value_record);
+        let result = values.get(&id).cloned();
 
         match result {
             None => Ok(None),
@@ -195,9 +242,10 @@ impl Db {
                 stats.inc_writes();
 
                 let mut created_at = self.indexes.created_at.write().unwrap();
-                created_at.insert(result.created_at.timestamp_nanos(), key);
+                created_at.insert(result.created_at.timestamp_nanos(), id);
 
-                tracing::info!("created_at = {:?}", created_at);
+                let mut key = self.indexes.key.write().unwrap();
+                key.insert(value_post.key, id);
 
                 Ok(Some(result.into()))
             }
@@ -208,33 +256,45 @@ impl Db {
         let mut stats = self.stats.write().unwrap();
         stats.inc_requests();
 
-        let values = self.values.read().unwrap();
-        let result = values.get(key).cloned();
+        let key_index = self.indexes.key.read().unwrap();
+        let id = key_index.get(key);
 
-        match result {
+        match id {
             None => Ok(None),
-            Some(result) => {
-                stats.inc_reads();
+            Some(id) => {
+                let values = self.values.read().unwrap();
+                let result = values.get(id).cloned();
 
-                Ok(Some(result.into()))
+                match result {
+                    None => Ok(None),
+                    Some(result) => {
+                        stats.inc_reads();
+
+                        Ok(Some(result.into()))
+                    }
+                }
             }
         }
     }
 
-    pub fn try_upsert(&self, key: String, value: ValuePut) -> Result<Option<ValueResponse>> {
+    pub fn try_upsert(&self, value_put: ValuePut) -> Result<Option<ValueResponse>> {
         let mut stats = self.stats.write().unwrap();
         stats.inc_requests();
 
+        let key_index = self.indexes.key.read().unwrap();
+        let id = *key_index.get(&value_put.key).unwrap();
+
         let mut values = self.values.write().unwrap();
-
-        let original_value = values.get(&key).ok_or(Error::NotFound)?.clone();
-
-        let mut new_value: ValueRecord = value.into();
-        new_value.id = original_value.id;
-        new_value.created_at = original_value.created_at;
-
-        values.insert(key.clone(), new_value);
-        let result = values.get(&key).cloned();
+        let original_value = values.get(&id).ok_or(Error::NotFound)?.clone();
+        let value_record = ValueRecord::new(
+            id,
+            &value_put.key,
+            &value_put.value,
+            original_value.created_at,
+            Utc::now(),
+        );
+        values.insert(id, value_record);
+        let result = values.get(&id).cloned();
 
         match result {
             None => Ok(None),
@@ -258,4 +318,5 @@ pub enum Direction {
 #[serde(rename_all = "snake_case")]
 pub enum Sort {
     CreatedAt,
+    Key,
 }

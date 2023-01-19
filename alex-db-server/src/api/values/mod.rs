@@ -50,7 +50,7 @@ pub async fn create(
 
     match value {
         None => {
-            let value = db.try_insert(key, input)?.ok_or(AppError::Conflict)?;
+            let value = db.try_insert(input)?.ok_or(AppError::Conflict)?;
 
             Ok((StatusCode::CREATED, Json(value)).into_response())
         }
@@ -171,7 +171,7 @@ pub async fn update(
 
     db.try_select(&key)?.ok_or(AppError::NotFound)?;
 
-    let value = db.try_upsert(key, input)?.ok_or(AppError::Conflict)?;
+    let value = db.try_upsert(input)?.ok_or(AppError::Conflict)?;
 
     Ok((StatusCode::OK, Json(value)).into_response())
 }
