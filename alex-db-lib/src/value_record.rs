@@ -27,10 +27,10 @@ pub struct ValuePut {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct ValueRecord {
     pub id: Uuid,
-    key: String,
+    pub key: String,
     value: String,
     pub created_at: DateTime<Utc>,
-    updated_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
 }
 
 impl ValueRecord {

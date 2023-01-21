@@ -15,6 +15,7 @@ pub const API_KEYS_FILE: &str = "api_keys.sec";
 pub const CREATED_AT_INDEX_FILE: &str = "created_at.idx";
 pub const DATABASE_FILE: &str = "values.db";
 pub const KEY_INDEX_FILE: &str = "key.idx";
+pub const UPDATED_AT_INDEX_FILE: &str = "updated_at.idx";
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Db {
@@ -107,6 +108,14 @@ impl Db {
                 let serialized = String::from_utf8(uncompressed)?;
                 self.indexes.key = serde_json::from_str(&serialized)?;
             }
+
+            let updated_at_index_file_path = format!("{}/{}", data_dir, UPDATED_AT_INDEX_FILE);
+            if Path::new(&updated_at_index_file_path).exists() {
+                let compressed = fs::read(updated_at_index_file_path)?;
+                let uncompressed = decompress_size_prepended(&compressed)?;
+                let serialized = String::from_utf8(uncompressed)?;
+                self.indexes.updated_at = serde_json::from_str(&serialized)?;
+            }
         }
 
         Ok(())
@@ -140,6 +149,12 @@ impl Db {
                 let serialized = serde_json::to_vec(&*key_index)?;
                 let compressed = compress_prepend_size(&serialized);
                 fs::write(key_index_file_path, compressed)?;
+
+                let updated_at_index = self.indexes.updated_at.read().unwrap();
+                let updated_at_index_file_path = format!("{}/{}", data_dir, UPDATED_AT_INDEX_FILE);
+                let serialized = serde_json::to_vec(&*updated_at_index)?;
+                let compressed = compress_prepend_size(&serialized);
+                fs::write(updated_at_index_file_path, compressed)?;
 
                 stats.update_saved_writes();
             }
@@ -189,6 +204,22 @@ impl Db {
                     }
                 }
             }
+            Sort::UpdatedAt => {
+                let updated_at_index = self.indexes.updated_at.read().unwrap();
+
+                match direction {
+                    Direction::Asc => {
+                        for (_key, value) in updated_at_index.iter() {
+                            ids.append(&mut vec![*value]);
+                        }
+                    }
+                    Direction::Desc => {
+                        for (_key, value) in updated_at_index.iter().rev() {
+                            ids.append(&mut vec![*value]);
+                        }
+                    }
+                }
+            }
         }
 
         for id in ids {
@@ -204,7 +235,7 @@ impl Db {
         let mut stats = self.stats.write().unwrap();
         stats.inc_requests();
 
-        let key_index = self.indexes.key.read().unwrap();
+        let mut key_index = self.indexes.key.write().unwrap();
         let id = *key_index.get(key).unwrap();
 
         let mut values = self.values.write().unwrap();
@@ -214,6 +245,14 @@ impl Db {
             None => Ok(None),
             Some(result) => {
                 stats.inc_writes();
+
+                let mut created_at_index = self.indexes.created_at.write().unwrap();
+                created_at_index.remove(&result.created_at.timestamp_nanos());
+
+                key_index.remove(&result.key);
+
+                let mut updated_at_index = self.indexes.updated_at.write().unwrap();
+                updated_at_index.remove(&result.updated_at.timestamp_nanos());
 
                 Ok(Some(result.into()))
             }
@@ -241,11 +280,14 @@ impl Db {
             Some(result) => {
                 stats.inc_writes();
 
-                let mut created_at = self.indexes.created_at.write().unwrap();
-                created_at.insert(result.created_at.timestamp_nanos(), id);
+                let mut created_at_index = self.indexes.created_at.write().unwrap();
+                created_at_index.insert(result.created_at.timestamp_nanos(), id);
 
-                let mut key = self.indexes.key.write().unwrap();
-                key.insert(value_post.key, id);
+                let mut key_index = self.indexes.key.write().unwrap();
+                key_index.insert(value_post.key, id);
+
+                let mut updated_at_index = self.indexes.updated_at.write().unwrap();
+                updated_at_index.insert(result.updated_at.timestamp_nanos(), id);
 
                 Ok(Some(result.into()))
             }
@@ -281,7 +323,7 @@ impl Db {
         let mut stats = self.stats.write().unwrap();
         stats.inc_requests();
 
-        let key_index = self.indexes.key.read().unwrap();
+        let mut key_index = self.indexes.key.write().unwrap();
         let id = *key_index.get(&value_put.key).unwrap();
 
         let mut values = self.values.write().unwrap();
@@ -301,6 +343,13 @@ impl Db {
             Some(result) => {
                 stats.inc_writes();
 
+                key_index.remove(&original_value.key);
+                key_index.insert(value_put.key, id);
+
+                let mut updated_at_index = self.indexes.updated_at.write().unwrap();
+                updated_at_index.remove(&original_value.updated_at.timestamp_nanos());
+                updated_at_index.insert(result.updated_at.timestamp_nanos(), id);
+
                 Ok(Some(result.into()))
             }
         }
@@ -319,4 +368,5 @@ pub enum Direction {
 pub enum Sort {
     CreatedAt,
     Key,
+    UpdatedAt,
 }

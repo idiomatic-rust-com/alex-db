@@ -6,6 +6,7 @@ use uuid::Uuid;
 pub struct Index {
     pub created_at: RwLock<BTreeMap<i64, Uuid>>,
     pub key: RwLock<BTreeMap<String, Uuid>>,
+    pub updated_at: RwLock<BTreeMap<i64, Uuid>>,
 }
 
 impl Index {
@@ -13,6 +14,7 @@ impl Index {
         Self {
             created_at: RwLock::new(BTreeMap::new()),
             key: RwLock::new(BTreeMap::new()),
+            updated_at: RwLock::new(BTreeMap::new()),
         }
     }
 }
