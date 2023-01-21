@@ -1,6 +1,10 @@
 use clap::Parser;
 use std::{error::Error, net::SocketAddr};
-use tracing::info;
+use tokio::{
+    task,
+    time::{sleep, Duration},
+};
+use tracing::{error, info};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 type Result<T> = std::result::Result<T, Box<dyn Error + Send + Sync>>;
@@ -52,6 +56,32 @@ pub async fn run() -> Result<()> {
     let config = config::load(args)?;
 
     let app = app::get_app(config.clone()).await?;
+
+    let db_for_deleting = app.db.clone();
+    task::spawn(async move {
+        loop {
+            let res = db_for_deleting.gc_delete();
+
+            if let Err(e) = res {
+                error!("Error: {:?}", e);
+            }
+
+            sleep(Duration::from_secs(1)).await;
+        }
+    });
+
+    let db_for_saving = app.db;
+    task::spawn(async move {
+        loop {
+            let res = db_for_saving.save();
+
+            if let Err(e) = res {
+                error!("Error: {:?}", e);
+            }
+
+            sleep(Duration::from_millis(config.saved_writes_sleep)).await;
+        }
+    });
 
     let addr = SocketAddr::from(([0, 0, 0, 0], config.port));
     info!("listening on {}", addr);

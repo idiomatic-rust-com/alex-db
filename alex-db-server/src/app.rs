@@ -2,15 +2,12 @@ use crate::{api, config::Config, Result};
 use alex_db_lib::db::Db;
 use axum::Router;
 use std::sync::Arc;
-use tokio::{
-    task,
-    time::{sleep, Duration},
-};
-use tracing::{error, info};
+use tracing::info;
 use uuid::Uuid;
 
 pub struct App {
     pub api_key: Option<Uuid>,
+    pub db: Arc<Db>,
     pub router: Router,
 }
 
@@ -33,23 +30,14 @@ pub async fn get_app(config: Config) -> Result<App> {
     }
 
     let db = Arc::new(db);
-    let cloned_db = db.clone();
 
-    let router = api::router(db).await;
+    let router = api::router(db.clone()).await;
 
-    task::spawn(async move {
-        loop {
-            let res = cloned_db.save();
-
-            if let Err(e) = res {
-                error!("Error: {:?}", e);
-            }
-
-            sleep(Duration::from_millis(config.saved_writes_sleep)).await;
-        }
-    });
-
-    let app = App { api_key, router };
+    let app = App {
+        api_key,
+        db,
+        router,
+    };
 
     Ok(app)
 }

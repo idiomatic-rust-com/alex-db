@@ -81,7 +81,7 @@ pub async fn delete(
     }
 
     db.try_select(&key)?.ok_or(AppError::NotFound)?;
-    db.try_delete(&key)?;
+    db.try_delete_by_key(&key)?;
 
     Ok((StatusCode::NO_CONTENT, ()).into_response())
 }

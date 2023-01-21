@@ -14,6 +14,7 @@ lazy_static! {
 pub struct ValuePost {
     #[validate(regex = "VALID_KEY")]
     pub key: String,
+    pub ttl: Option<i64>,
     pub value: String,
 }
 
@@ -21,6 +22,7 @@ pub struct ValuePost {
 pub struct ValuePut {
     #[validate(regex = "VALID_KEY")]
     pub key: String,
+    pub ttl: Option<i64>,
     pub value: String,
 }
 
@@ -30,6 +32,7 @@ pub struct ValueRecord {
     pub key: String,
     value: String,
     pub created_at: DateTime<Utc>,
+    pub delete_at: Option<DateTime<Utc>>,
     pub updated_at: DateTime<Utc>,
 }
 
@@ -39,6 +42,7 @@ impl ValueRecord {
         key: &str,
         value: &str,
         created_at: DateTime<Utc>,
+        delete_at: Option<DateTime<Utc>>,
         updated_at: DateTime<Utc>,
     ) -> Self {
         Self {
@@ -46,6 +50,7 @@ impl ValueRecord {
             key: key.into(),
             value: value.into(),
             created_at,
+            delete_at,
             updated_at,
         }
     }
