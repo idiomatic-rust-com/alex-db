@@ -1,3 +1,5 @@
+#![forbid(unsafe_code)]
+
 use std::error::Error;
 
 type Result<T> = std::result::Result<T, Box<dyn Error + Send + Sync>>;
