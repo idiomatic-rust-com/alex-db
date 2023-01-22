@@ -198,7 +198,13 @@ impl Db {
         Ok(())
     }
 
-    pub fn select_all(&self, direction: Direction, sort: Sort) -> Result<Vec<ValueResponse>> {
+    pub fn select_all(
+        &self,
+        direction: Direction,
+        limit: Option<usize>,
+        page: Option<usize>,
+        sort: Sort,
+    ) -> Result<Vec<ValueResponse>> {
         let mut stats = self.stats.write().unwrap();
         stats.inc_requests();
 
@@ -255,6 +261,19 @@ impl Db {
                     }
                 }
             }
+        }
+
+        if limit.is_some() || page.is_some() {
+            let limit = limit.unwrap_or(10);
+            let page = page.unwrap_or(1);
+
+            let skip = (page - 1) * limit;
+
+            ids = ids
+                .into_iter()
+                .skip(skip)
+                .take(limit)
+                .collect::<Vec<Uuid>>();
         }
 
         for id in ids {

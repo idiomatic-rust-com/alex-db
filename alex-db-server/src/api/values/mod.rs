@@ -18,8 +18,8 @@ use validator::Validate;
 pub struct QueryParams {
     pub direction: Option<Direction>,
     pub ends_at: Option<DateTime<Utc>>,
-    pub limit: Option<u32>,
-    pub page: Option<u32>,
+    pub limit: Option<usize>,
+    pub page: Option<usize>,
     pub sort: Option<Sort>,
     pub starts_at: Option<DateTime<Utc>>,
 }
@@ -108,7 +108,7 @@ pub async fn list(
     let direction = query_params.direction.unwrap_or(Direction::Asc);
     let sort = query_params.sort.unwrap_or(Sort::CreatedAt);
 
-    let values = db.select_all(direction, sort)?;
+    let values = db.select_all(direction, query_params.limit, query_params.page, sort)?;
 
     Ok((StatusCode::OK, Json(values)).into_response())
 }
