@@ -10,12 +10,29 @@ lazy_static! {
     static ref VALID_KEY: Regex = Regex::new(r"^[a-zA-Z0-9._~!$&'()*+,;=:@/?-]+$").unwrap();
 }
 
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize, ToSchema)]
+#[serde(untagged)]
+pub enum ArrayValue {
+    Boolean(bool),
+    Integer(i64),
+    String(String),
+}
+
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize, ToSchema)]
+#[serde(untagged)]
+pub enum Value {
+    Array(Vec<ArrayValue>),
+    Boolean(bool),
+    Integer(i64),
+    String(String),
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize, ToSchema, Validate)]
 pub struct ValuePost {
     #[validate(regex = "VALID_KEY")]
     pub key: String,
     pub ttl: Option<i64>,
-    pub value: String,
+    pub value: Value,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, ToSchema, Validate)]
@@ -23,14 +40,14 @@ pub struct ValuePut {
     #[validate(regex = "VALID_KEY")]
     pub key: String,
     pub ttl: Option<i64>,
-    pub value: String,
+    pub value: Value,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct ValueRecord {
     pub id: Uuid,
     pub key: String,
-    value: String,
+    value: Value,
     pub created_at: DateTime<Utc>,
     pub delete_at: Option<DateTime<Utc>>,
     pub updated_at: DateTime<Utc>,
@@ -40,7 +57,7 @@ impl ValueRecord {
     pub fn new(
         id: Uuid,
         key: &str,
-        value: &str,
+        value: &Value,
         created_at: DateTime<Utc>,
         delete_at: Option<DateTime<Utc>>,
         updated_at: DateTime<Utc>,
@@ -48,7 +65,7 @@ impl ValueRecord {
         Self {
             id,
             key: key.into(),
-            value: value.into(),
+            value: value.clone(),
             created_at,
             delete_at,
             updated_at,
@@ -59,7 +76,7 @@ impl ValueRecord {
 #[derive(Clone, Debug, Deserialize, Serialize, ToSchema)]
 pub struct ValueResponse {
     pub key: String,
-    pub value: String,
+    pub value: Value,
 }
 
 impl From<ValueRecord> for ValueResponse {

@@ -11,3 +11,4 @@
 - API tests
 - Authentication via API keys
 - Saving database in background
+- Garbage collection of expired values

@@ -6,5 +6,6 @@
 
 - Basic database structure
 - Basic database operations
+- Indexes
 - API keys
 - Saving/restoring database

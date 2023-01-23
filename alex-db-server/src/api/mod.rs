@@ -2,7 +2,7 @@ use crate::error::ResponseError;
 use alex_db_lib::{
     db::Db,
     stat_record::StatRecord,
-    value_record::{ValuePost, ValuePut, ValueResponse},
+    value_record::{ArrayValue, Value, ValuePost, ValuePut, ValueResponse},
 };
 use axum::{
     error_handling::HandleErrorLayer,
@@ -31,8 +31,10 @@ pub async fn router(db: Arc<Db>) -> Router {
         ),
         components(
             schemas(
+                ArrayValue,
                 ResponseError,
                 StatRecord,
+                Value,
                 ValuePost,
                 ValuePut,
                 ValueResponse,
