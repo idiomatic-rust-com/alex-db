@@ -56,7 +56,7 @@ where
 
         let access = Access {
             api_key_exists,
-            restricted_access: db.restricted_access,
+            restricted_access: db.config.enable_security_api_keys,
             x_auth_token,
         };
         Ok(access)

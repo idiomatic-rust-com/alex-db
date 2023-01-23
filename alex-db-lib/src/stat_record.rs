@@ -12,19 +12,19 @@ pub struct StatRecord {
 }
 
 impl StatRecord {
-    pub fn can_save(&self, saved_writes_threshold: u16, saved_writes_trigger_after: i64) -> bool {
+    pub fn can_save(&self, save_triggered_after_ms: i64, save_triggered_by_threshold: u16) -> bool {
         let mut can_save = false;
 
         match self.saved_at {
             None => can_save = true,
             Some(saved_at) => {
-                if saved_at + Duration::milliseconds(saved_writes_trigger_after) < Utc::now() {
+                if saved_at + Duration::milliseconds(save_triggered_after_ms) < Utc::now() {
                     can_save = true;
                 }
             }
         }
 
-        if self.writes >= self.saved_writes + u128::from(saved_writes_threshold) {
+        if self.writes >= self.saved_writes + u128::from(save_triggered_by_threshold) {
             can_save = true;
         }
 

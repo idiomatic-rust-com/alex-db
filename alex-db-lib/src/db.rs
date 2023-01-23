@@ -1,4 +1,5 @@
 use crate::{
+    config::Config,
     error::Error,
     index::Index,
     stat_record::StatRecord,
@@ -21,29 +22,18 @@ pub const UPDATED_AT_INDEX_FILE: &str = "updated_at.idx";
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Db {
     api_keys: RwLock<Vec<Uuid>>,
-    data_dir: Option<String>,
+    pub config: Config,
     pub indexes: Index,
-    pub restricted_access: bool,
-    saved_writes_threshold: u16,
-    saved_writes_trigger_after: i64,
     pub stats: RwLock<StatRecord>,
     pub values: RwLock<HashMap<Uuid, ValueRecord>>,
 }
 
 impl Db {
-    pub fn new(
-        data_dir: Option<String>,
-        restricted_access: bool,
-        saved_writes_threshold: u16,
-        saved_writes_trigger_after: i64,
-    ) -> Self {
+    pub fn new(config: Config) -> Self {
         Self {
             api_keys: RwLock::new(vec![]),
-            data_dir,
+            config,
             indexes: Index::default(),
-            restricted_access,
-            saved_writes_threshold,
-            saved_writes_trigger_after,
             stats: RwLock::new(StatRecord::default()),
             values: RwLock::new(HashMap::new()),
         }
@@ -70,21 +60,21 @@ impl Db {
         Ok(None)
     }
 
-    pub fn gc_delete(&self) -> Result<()> {
+    pub fn gc(&self) -> Result<()> {
         let delete_at_index = self.indexes.delete_at.read().unwrap();
         let now = Utc::now();
-        let mut values = vec![];
+        let mut ids = vec![];
 
         for (key, value) in delete_at_index.iter() {
             if now.timestamp_nanos() > *key {
-                values.append(&mut vec![*value]);
+                ids.append(&mut vec![*value]);
             }
         }
 
         drop(delete_at_index);
 
-        for value in values {
-            self.try_delete_by_id(value)?;
+        for id in ids {
+            self.try_delete_by_id(id)?;
         }
 
         Ok(())
@@ -97,7 +87,7 @@ impl Db {
     }
 
     pub fn restore(&mut self) -> Result<()> {
-        if let Some(data_dir) = &self.data_dir {
+        if let Some(data_dir) = &self.config.data_dir {
             let api_keys_file_path = format!("{}/{}", data_dir, API_KEYS_FILE);
             if Path::new(&api_keys_file_path).exists() {
                 let compressed = fs::read(api_keys_file_path)?;
@@ -151,10 +141,13 @@ impl Db {
     }
 
     pub fn save(&self) -> Result<()> {
-        if let Some(data_dir) = &self.data_dir {
+        if let Some(data_dir) = &self.config.data_dir {
             let mut stats = self.stats.write().unwrap();
 
-            if stats.can_save(self.saved_writes_threshold, self.saved_writes_trigger_after) {
+            if stats.can_save(
+                self.config.save_triggered_after_ms,
+                self.config.save_triggered_by_threshold,
+            ) {
                 let api_keys = self.api_keys.read().unwrap().to_owned();
                 let api_keys_file_path = format!("{}/{}", data_dir, API_KEYS_FILE);
                 let serialized = serde_json::to_vec(&*api_keys)?;

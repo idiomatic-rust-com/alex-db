@@ -12,17 +12,11 @@ pub struct App {
 }
 
 pub async fn get_app(config: Config) -> Result<App> {
-    let restricted_access = config.security_api_keys;
-    let mut db = Db::new(
-        config.data_dir,
-        restricted_access,
-        config.saved_writes_threshold,
-        config.saved_writes_trigger_after,
-    );
+    let mut db = Db::new(config.db_config.clone());
     db.restore()?;
     let mut api_key = None;
 
-    if config.security_api_keys {
+    if config.db_config.enable_security_api_keys {
         api_key = db.api_key_init()?;
         if api_key.is_some() {
             info!("initial api key created: {:?}", api_key);

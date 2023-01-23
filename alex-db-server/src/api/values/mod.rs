@@ -179,7 +179,7 @@ pub async fn update(
 #[cfg(test)]
 mod tests {
     use crate::{app, config::Config};
-    use alex_db_lib::value_record::ValueResponse;
+    use alex_db_lib::{config::Config as DbConfig, value_record::ValueResponse};
     use axum::{
         body::Body,
         http::{self, Request, StatusCode},
@@ -192,14 +192,9 @@ mod tests {
 
     #[tokio::test]
     async fn create_201() {
-        let config = Config {
-            data_dir: None,
-            port: 8080,
-            saved_writes_sleep: 10000,
-            saved_writes_threshold: 8,
-            saved_writes_trigger_after: 60000,
-            security_api_keys: false,
-        };
+        let mut db_config = DbConfig::default();
+        db_config.enable_security_api_keys = false;
+        let config = Config::new(db_config, 8080);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
 
@@ -235,14 +230,9 @@ mod tests {
 
     #[tokio::test]
     async fn create_201_authentication() {
-        let config = Config {
-            data_dir: None,
-            port: 8080,
-            saved_writes_sleep: 10000,
-            saved_writes_threshold: 8,
-            saved_writes_trigger_after: 60000,
-            security_api_keys: true,
-        };
+        let mut db_config = DbConfig::default();
+        db_config.enable_security_api_keys = true;
+        let config = Config::new(db_config, 8080);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
 
@@ -279,14 +269,9 @@ mod tests {
 
     #[tokio::test]
     async fn create_401() {
-        let config = Config {
-            data_dir: None,
-            port: 8080,
-            saved_writes_sleep: 10000,
-            saved_writes_threshold: 8,
-            saved_writes_trigger_after: 60000,
-            security_api_keys: true,
-        };
+        let mut db_config = DbConfig::default();
+        db_config.enable_security_api_keys = true;
+        let config = Config::new(db_config, 8080);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
 
@@ -316,14 +301,9 @@ mod tests {
 
     #[tokio::test]
     async fn create_409() {
-        let config = Config {
-            data_dir: None,
-            port: 8080,
-            saved_writes_sleep: 10000,
-            saved_writes_threshold: 8,
-            saved_writes_trigger_after: 60000,
-            security_api_keys: false,
-        };
+        let mut db_config = DbConfig::default();
+        db_config.enable_security_api_keys = false;
+        let config = Config::new(db_config, 8080);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
@@ -382,14 +362,9 @@ mod tests {
 
     #[tokio::test]
     async fn delete_204() {
-        let config = Config {
-            data_dir: None,
-            port: 8080,
-            saved_writes_sleep: 10000,
-            saved_writes_threshold: 8,
-            saved_writes_trigger_after: 60000,
-            security_api_keys: false,
-        };
+        let mut db_config = DbConfig::default();
+        db_config.enable_security_api_keys = false;
+        let config = Config::new(db_config, 8080);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
@@ -440,14 +415,9 @@ mod tests {
 
     #[tokio::test]
     async fn delete_204_authentication() {
-        let config = Config {
-            data_dir: None,
-            port: 8080,
-            saved_writes_sleep: 10000,
-            saved_writes_threshold: 8,
-            saved_writes_trigger_after: 60000,
-            security_api_keys: true,
-        };
+        let mut db_config = DbConfig::default();
+        db_config.enable_security_api_keys = true;
+        let config = Config::new(db_config, 8080);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
@@ -500,14 +470,9 @@ mod tests {
 
     #[tokio::test]
     async fn delete_401() {
-        let config = Config {
-            data_dir: None,
-            port: 8080,
-            saved_writes_sleep: 10000,
-            saved_writes_threshold: 8,
-            saved_writes_trigger_after: 60000,
-            security_api_keys: true,
-        };
+        let mut db_config = DbConfig::default();
+        db_config.enable_security_api_keys = true;
+        let config = Config::new(db_config, 8080);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
@@ -559,14 +524,9 @@ mod tests {
 
     #[tokio::test]
     async fn delete_404() {
-        let config = Config {
-            data_dir: None,
-            port: 8080,
-            saved_writes_sleep: 10000,
-            saved_writes_threshold: 8,
-            saved_writes_trigger_after: 60000,
-            security_api_keys: false,
-        };
+        let mut db_config = DbConfig::default();
+        db_config.enable_security_api_keys = false;
+        let config = Config::new(db_config, 8080);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
@@ -632,14 +592,9 @@ mod tests {
 
     #[tokio::test]
     async fn list_one_200() {
-        let config = Config {
-            data_dir: None,
-            port: 8080,
-            saved_writes_sleep: 10000,
-            saved_writes_threshold: 8,
-            saved_writes_trigger_after: 60000,
-            security_api_keys: false,
-        };
+        let mut db_config = DbConfig::default();
+        db_config.enable_security_api_keys = false;
+        let config = Config::new(db_config, 8080);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
@@ -695,14 +650,9 @@ mod tests {
 
     #[tokio::test]
     async fn list_two_200() {
-        let config = Config {
-            data_dir: None,
-            port: 8080,
-            saved_writes_sleep: 10000,
-            saved_writes_threshold: 8,
-            saved_writes_trigger_after: 60000,
-            security_api_keys: false,
-        };
+        let mut db_config = DbConfig::default();
+        db_config.enable_security_api_keys = false;
+        let config = Config::new(db_config, 8080);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
@@ -788,14 +738,9 @@ mod tests {
 
     #[tokio::test]
     async fn list_empty_200() {
-        let config = Config {
-            data_dir: None,
-            port: 8080,
-            saved_writes_sleep: 10000,
-            saved_writes_threshold: 8,
-            saved_writes_trigger_after: 60000,
-            security_api_keys: false,
-        };
+        let mut db_config = DbConfig::default();
+        db_config.enable_security_api_keys = false;
+        let config = Config::new(db_config, 8080);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
 
@@ -821,14 +766,9 @@ mod tests {
 
     #[tokio::test]
     async fn list_empty_200_authentication() {
-        let config = Config {
-            data_dir: None,
-            port: 8080,
-            saved_writes_sleep: 10000,
-            saved_writes_threshold: 8,
-            saved_writes_trigger_after: 60000,
-            security_api_keys: true,
-        };
+        let mut db_config = DbConfig::default();
+        db_config.enable_security_api_keys = true;
+        let config = Config::new(db_config, 8080);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
 
@@ -855,14 +795,9 @@ mod tests {
 
     #[tokio::test]
     async fn list_empty_401() {
-        let config = Config {
-            data_dir: None,
-            port: 8080,
-            saved_writes_sleep: 10000,
-            saved_writes_threshold: 8,
-            saved_writes_trigger_after: 60000,
-            security_api_keys: true,
-        };
+        let mut db_config = DbConfig::default();
+        db_config.enable_security_api_keys = true;
+        let config = Config::new(db_config, 8080);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
 
@@ -883,14 +818,9 @@ mod tests {
 
     #[tokio::test]
     async fn read_200() {
-        let config = Config {
-            data_dir: None,
-            port: 8080,
-            saved_writes_sleep: 10000,
-            saved_writes_threshold: 8,
-            saved_writes_trigger_after: 60000,
-            security_api_keys: false,
-        };
+        let mut db_config = DbConfig::default();
+        db_config.enable_security_api_keys = false;
+        let config = Config::new(db_config, 8080);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
@@ -947,14 +877,9 @@ mod tests {
 
     #[tokio::test]
     async fn read_200_authentication() {
-        let config = Config {
-            data_dir: None,
-            port: 8080,
-            saved_writes_sleep: 10000,
-            saved_writes_threshold: 8,
-            saved_writes_trigger_after: 60000,
-            security_api_keys: true,
-        };
+        let mut db_config = DbConfig::default();
+        db_config.enable_security_api_keys = true;
+        let config = Config::new(db_config, 8080);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
@@ -1013,14 +938,9 @@ mod tests {
 
     #[tokio::test]
     async fn read_401() {
-        let config = Config {
-            data_dir: None,
-            port: 8080,
-            saved_writes_sleep: 10000,
-            saved_writes_threshold: 8,
-            saved_writes_trigger_after: 60000,
-            security_api_keys: true,
-        };
+        let mut db_config = DbConfig::default();
+        db_config.enable_security_api_keys = true;
+        let config = Config::new(db_config, 8080);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
@@ -1072,14 +992,9 @@ mod tests {
 
     #[tokio::test]
     async fn read_404() {
-        let config = Config {
-            data_dir: None,
-            port: 8080,
-            saved_writes_sleep: 10000,
-            saved_writes_threshold: 8,
-            saved_writes_trigger_after: 60000,
-            security_api_keys: false,
-        };
+        let mut db_config = DbConfig::default();
+        db_config.enable_security_api_keys = false;
+        let config = Config::new(db_config, 8080);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
 
@@ -1102,14 +1017,9 @@ mod tests {
 
     #[tokio::test]
     async fn update_200() {
-        let config = Config {
-            data_dir: None,
-            port: 8080,
-            saved_writes_sleep: 10000,
-            saved_writes_threshold: 8,
-            saved_writes_trigger_after: 60000,
-            security_api_keys: false,
-        };
+        let mut db_config = DbConfig::default();
+        db_config.enable_security_api_keys = false;
+        let config = Config::new(db_config, 8080);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
@@ -1174,14 +1084,9 @@ mod tests {
 
     #[tokio::test]
     async fn update_200_authentication() {
-        let config = Config {
-            data_dir: None,
-            port: 8080,
-            saved_writes_sleep: 10000,
-            saved_writes_threshold: 8,
-            saved_writes_trigger_after: 60000,
-            security_api_keys: true,
-        };
+        let mut db_config = DbConfig::default();
+        db_config.enable_security_api_keys = true;
+        let config = Config::new(db_config, 8080);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
@@ -1248,14 +1153,9 @@ mod tests {
 
     #[tokio::test]
     async fn update_401() {
-        let config = Config {
-            data_dir: None,
-            port: 8080,
-            saved_writes_sleep: 10000,
-            saved_writes_threshold: 8,
-            saved_writes_trigger_after: 60000,
-            security_api_keys: true,
-        };
+        let mut db_config = DbConfig::default();
+        db_config.enable_security_api_keys = true;
+        let config = Config::new(db_config, 8080);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
@@ -1315,14 +1215,9 @@ mod tests {
 
     #[tokio::test]
     async fn update_404() {
-        let config = Config {
-            data_dir: None,
-            port: 8080,
-            saved_writes_sleep: 10000,
-            saved_writes_threshold: 8,
-            saved_writes_trigger_after: 60000,
-            security_api_keys: false,
-        };
+        let mut db_config = DbConfig::default();
+        db_config.enable_security_api_keys = false;
+        let config = Config::new(db_config, 8080);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
 
@@ -1352,14 +1247,9 @@ mod tests {
 
     #[tokio::test]
     async fn update_409() {
-        let config = Config {
-            data_dir: None,
-            port: 8080,
-            saved_writes_sleep: 10000,
-            saved_writes_threshold: 8,
-            saved_writes_trigger_after: 60000,
-            security_api_keys: false,
-        };
+        let mut db_config = DbConfig::default();
+        db_config.enable_security_api_keys = false;
+        let config = Config::new(db_config, 8080);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();

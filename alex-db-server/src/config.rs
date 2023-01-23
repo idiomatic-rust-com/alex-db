@@ -1,130 +1,108 @@
 use crate::{Args, Result};
+use alex_db_lib::config::Config as DbConfig;
 use tracing::info;
 
 #[derive(Clone, Debug)]
 pub struct Config {
-    pub data_dir: Option<String>,
+    pub db_config: DbConfig,
     pub port: u16,
-    pub saved_writes_sleep: u64,
-    pub saved_writes_threshold: u16,
-    pub saved_writes_trigger_after: i64,
-    pub security_api_keys: bool,
 }
 
 impl Config {
-    pub fn new(
-        data_dir: Option<String>,
-        port: u16,
-        saved_writes_sleep: u64,
-        saved_writes_threshold: u16,
-        saved_writes_trigger_after: i64,
-        security_api_keys: bool,
-    ) -> Self {
-        Self {
-            data_dir,
-            port,
-            saved_writes_sleep,
-            saved_writes_threshold,
-            saved_writes_trigger_after,
-            security_api_keys,
-        }
+    pub fn new(db_config: DbConfig, port: u16) -> Self {
+        Self { db_config, port }
     }
 }
 
 pub fn load(args: Args) -> Result<Config> {
     let mut data_dir = None;
+    let mut enable_security_api_keys = true;
     let mut port = 8080;
-    let mut saved_writes_sleep = 10000;
-    let mut saved_writes_threshold = 8;
-    let mut saved_writes_trigger_after = 600000;
-    let mut security_api_keys = true;
+    let mut save_triggered_after_ms = 600000;
+    let mut save_triggered_by_threshold = 8;
+    let mut sleep_time_between_gc_ms = 1000;
+    let mut sleep_time_between_saves_ms = 10000;
 
-    match std::env::var("ALEX_DB_DATA_DIR") {
-        Err(_) => {}
-        Ok(val) => data_dir = Some(val),
+    if let Ok(val) = std::env::var("ALEX_DB_DATA_DIR") {
+        data_dir = Some(val)
     }
 
-    match args.data_dir {
-        None => {}
-        Some(val) => data_dir = Some(val),
+    if let Some(val) = args.data_dir {
+        data_dir = Some(val)
     }
 
-    match std::env::var("ALEX_DB_PORT") {
-        Err(_) => {}
-        Ok(val) => {
-            port = val.parse::<u16>()?;
-        }
+    if let Ok(val) = std::env::var("ALEX_DB_ENABLE_SECURITY_API_KEYS") {
+        enable_security_api_keys = val.parse::<bool>()?
     }
 
-    match args.port {
-        None => {}
-        Some(val) => port = val,
+    if let Some(val) = args.enable_security_api_keys {
+        enable_security_api_keys = val
     }
 
-    match std::env::var("ALEX_DB_SAVED_WRITES_SLEEP") {
-        Err(_) => {}
-        Ok(val) => {
-            saved_writes_sleep = val.parse::<u64>()?;
-        }
+    if let Ok(val) = std::env::var("ALEX_DB_PORT") {
+        port = val.parse::<u16>()?
     }
 
-    match args.saved_writes_sleep {
-        None => {}
-        Some(val) => saved_writes_sleep = val,
+    if let Some(val) = args.port {
+        port = val
     }
 
-    match std::env::var("ALEX_DB_SAVED_WRITES_THRESHOLD") {
-        Err(_) => {}
-        Ok(val) => {
-            saved_writes_threshold = val.parse::<u16>()?;
-        }
+    if let Ok(val) = std::env::var("ALEX_DB_SAVE_TRIGGERED_AFTER_MS") {
+        save_triggered_after_ms = val.parse::<i64>()?
     }
 
-    match args.saved_writes_threshold {
-        None => {}
-        Some(val) => saved_writes_threshold = val,
+    if let Some(val) = args.save_triggered_after_ms {
+        save_triggered_after_ms = val
     }
 
-    match std::env::var("ALEX_DB_SAVED_WRITES_TRIGGER_AFTER") {
-        Err(_) => {}
-        Ok(val) => {
-            saved_writes_trigger_after = val.parse::<i64>()?;
-        }
+    if let Ok(val) = std::env::var("ALEX_DB_SAVE_TRIGGERED_BY_THRESHOLD") {
+        save_triggered_by_threshold = val.parse::<u16>()?
     }
 
-    match args.saved_writes_trigger_after {
-        None => {}
-        Some(val) => saved_writes_trigger_after = val,
+    if let Some(val) = args.save_triggered_by_threshold {
+        save_triggered_by_threshold = val
     }
 
-    match std::env::var("ALEX_DB_SECURITY_API_KEYS") {
-        Err(_) => {}
-        Ok(val) => {
-            security_api_keys = val.parse::<bool>()?;
-        }
+    if let Ok(val) = std::env::var("ALEX_DB_SLEEP_TIME_BETWEEN_GC_MS") {
+        sleep_time_between_gc_ms = val.parse::<u64>()?
     }
 
-    match args.security_api_keys {
-        None => {}
-        Some(val) => security_api_keys = val,
+    if let Some(val) = args.sleep_time_between_gc_ms {
+        sleep_time_between_gc_ms = val
+    }
+
+    if let Ok(val) = std::env::var("ALEX_DB_SLEEP_TIME_BETWEEN_SAVES_MS") {
+        sleep_time_between_saves_ms = val.parse::<u64>()?
+    }
+
+    if let Some(val) = args.sleep_time_between_saves_ms {
+        sleep_time_between_saves_ms = val
     }
 
     info!("data_dir = {:?}", data_dir);
+    info!("enable_security_api_keys = {}", enable_security_api_keys);
     info!("port = {}", port);
-    info!("saved_writes_sleep = {}", saved_writes_sleep);
-    info!("saved_writes_threshold = {}", saved_writes_threshold);
+    info!("save_triggered_after_ms = {}", save_triggered_after_ms);
     info!(
-        "saved_writes_trigger_after = {}",
-        saved_writes_trigger_after
+        "save_triggered_by_threshold = {}",
+        save_triggered_by_threshold
     );
-    info!("security_api_keys = {}", security_api_keys);
+    info!("sleep_time_between_gc_ms = {}", sleep_time_between_gc_ms);
+    info!(
+        "sleep_time_between_saves_ms = {}",
+        sleep_time_between_saves_ms
+    );
 
-    Ok(Config::new(
+    let db_config = DbConfig::new(
         data_dir,
-        port,
-        saved_writes_sleep,
-        saved_writes_threshold,
-        saved_writes_trigger_after,
-        security_api_keys,
-    ))
+        enable_security_api_keys,
+        save_triggered_after_ms,
+        save_triggered_by_threshold,
+        sleep_time_between_gc_ms,
+        sleep_time_between_saves_ms,
+    );
+
+    let config = Config::new(db_config, port);
+
+    Ok(config)
 }

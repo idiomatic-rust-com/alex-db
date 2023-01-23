@@ -22,25 +22,29 @@ pub struct Args {
     #[arg(short, long)]
     pub data_dir: Option<String>,
 
+    /// Enable API Key endpoint protection
+    #[arg(short, long)]
+    pub enable_security_api_keys: Option<bool>,
+
     /// Port
     #[arg(short, long)]
     pub port: Option<u16>,
 
-    /// Sleep time in miliseconds
+    /// Database save triggered after write operations threshold
     #[arg(long)]
-    pub saved_writes_sleep: Option<u64>,
+    pub save_triggered_by_threshold: Option<u16>,
 
-    /// Threshold
+    /// Database save triggered after time in ms
     #[arg(long)]
-    pub saved_writes_threshold: Option<u16>,
+    pub save_triggered_after_ms: Option<i64>,
 
-    /// Trigger write after
+    /// Sleep time between database gc in ms
     #[arg(long)]
-    pub saved_writes_trigger_after: Option<i64>,
+    pub sleep_time_between_gc_ms: Option<u64>,
 
-    /// Enable/disable API Key endpoint protection
-    #[arg(short, long)]
-    pub security_api_keys: Option<bool>,
+    /// Sleep time between database saves in ms
+    #[arg(long)]
+    pub sleep_time_between_saves_ms: Option<u64>,
 }
 
 pub async fn run() -> Result<()> {
@@ -60,13 +64,16 @@ pub async fn run() -> Result<()> {
     let db_for_deleting = app.db.clone();
     task::spawn(async move {
         loop {
-            let res = db_for_deleting.gc_delete();
+            let res = db_for_deleting.gc();
 
             if let Err(e) = res {
                 error!("Error: {:?}", e);
             }
 
-            sleep(Duration::from_secs(1)).await;
+            sleep(Duration::from_millis(
+                config.db_config.sleep_time_between_gc_ms,
+            ))
+            .await;
         }
     });
 
@@ -79,7 +86,10 @@ pub async fn run() -> Result<()> {
                 error!("Error: {:?}", e);
             }
 
-            sleep(Duration::from_millis(config.saved_writes_sleep)).await;
+            sleep(Duration::from_millis(
+                config.db_config.sleep_time_between_saves_ms,
+            ))
+            .await;
         }
     });
 

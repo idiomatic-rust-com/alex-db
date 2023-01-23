@@ -28,7 +28,7 @@ pub async fn list(
 #[cfg(test)]
 mod tests {
     use crate::{app, config::Config};
-    use alex_db_lib::stat_record::StatRecord;
+    use alex_db_lib::{config::Config as DbConfig, stat_record::StatRecord};
     use axum::{
         body::Body,
         http::{self, Request, StatusCode},
@@ -37,14 +37,9 @@ mod tests {
 
     #[tokio::test]
     async fn list_200() {
-        let config = Config {
-            data_dir: None,
-            port: 8080,
-            saved_writes_sleep: 10000,
-            saved_writes_threshold: 8,
-            saved_writes_trigger_after: 60000,
-            security_api_keys: false,
-        };
+        let mut db_config = DbConfig::default();
+        db_config.enable_security_api_keys = false;
+        let config = Config::new(db_config, 8080);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
 
@@ -73,14 +68,9 @@ mod tests {
 
     #[tokio::test]
     async fn list_200_authentication() {
-        let config = Config {
-            data_dir: None,
-            port: 8080,
-            saved_writes_sleep: 10000,
-            saved_writes_threshold: 8,
-            saved_writes_trigger_after: 60000,
-            security_api_keys: true,
-        };
+        let mut db_config = DbConfig::default();
+        db_config.enable_security_api_keys = true;
+        let config = Config::new(db_config, 8080);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
 
@@ -110,14 +100,9 @@ mod tests {
 
     #[tokio::test]
     async fn list_401() {
-        let config = Config {
-            data_dir: None,
-            port: 8080,
-            saved_writes_sleep: 10000,
-            saved_writes_threshold: 8,
-            saved_writes_trigger_after: 60000,
-            security_api_keys: true,
-        };
+        let mut db_config = DbConfig::default();
+        db_config.enable_security_api_keys = true;
+        let config = Config::new(db_config, 8080);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
 
