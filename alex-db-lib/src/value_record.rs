@@ -12,16 +12,8 @@ lazy_static! {
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize, ToSchema)]
 #[serde(untagged)]
-pub enum ArrayValue {
-    Boolean(bool),
-    Integer(i64),
-    String(String),
-}
-
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize, ToSchema)]
-#[serde(untagged)]
 pub enum Value {
-    Array(Vec<ArrayValue>),
+    Array(Vec<Value>),
     Boolean(bool),
     Integer(i64),
     String(String),

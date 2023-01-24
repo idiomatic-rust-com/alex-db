@@ -2,7 +2,7 @@ use crate::error::ResponseError;
 use alex_db_lib::{
     db::Db,
     stat_record::StatRecord,
-    value_record::{ArrayValue, Value, ValuePost, ValuePut, ValueResponse},
+    value_record::{Value, ValuePost, ValuePut, ValueResponse},
 };
 use axum::{
     error_handling::HandleErrorLayer,
@@ -23,6 +23,7 @@ pub async fn router(db: Arc<Db>) -> Router {
     #[derive(OpenApi)]
     #[openapi(
         paths(
+            stats::list,
             values::create,
             values::delete,
             values::list,
@@ -31,7 +32,6 @@ pub async fn router(db: Arc<Db>) -> Router {
         ),
         components(
             schemas(
-                ArrayValue,
                 ResponseError,
                 StatRecord,
                 Value,
@@ -41,7 +41,8 @@ pub async fn router(db: Arc<Db>) -> Router {
             )
         ),
         tags(
-            (name = "values", description = "Values management API")
+            (name = "stats", description = "Stats API"),
+            (name = "values", description = "Values management API"),
         )
     )]
     struct ApiDoc;
