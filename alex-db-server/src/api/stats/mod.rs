@@ -8,8 +8,12 @@ use std::sync::Arc;
     get,
     path = "/stats",
     responses(
-        (status = 200, description = "List of the stats", body = StatRecord),
-        (status = 401, description = "Unauthorized", body = ResponseError),
+        (status = 200, description = "Stats read.", body = StatRecord),
+        (status = 401, description = "Unauthorized request.", body = ResponseError),
+    ),
+    security(
+        (),
+        ("api_key" = [])
     )
 )]
 pub async fn list(

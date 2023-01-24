@@ -13,7 +13,10 @@ use axum::{
 use std::{sync::Arc, time::Duration};
 use tower::{BoxError, ServiceBuilder};
 use tower_http::trace::TraceLayer;
-use utoipa::OpenApi;
+use utoipa::{
+    openapi::security::{ApiKey, ApiKeyValue, SecurityScheme},
+    Modify, OpenApi,
+};
 use utoipa_swagger_ui::SwaggerUi;
 
 mod stats;
@@ -22,14 +25,6 @@ mod values;
 pub async fn router(db: Arc<Db>) -> Router {
     #[derive(OpenApi)]
     #[openapi(
-        paths(
-            stats::list,
-            values::create,
-            values::delete,
-            values::list,
-            values::read,
-            values::update,
-        ),
         components(
             schemas(
                 ResponseError,
@@ -40,12 +35,34 @@ pub async fn router(db: Arc<Db>) -> Router {
                 ValueResponse,
             )
         ),
+        modifiers(&SecurityAddon),
+        paths(
+            stats::list,
+            values::create,
+            values::delete,
+            values::list,
+            values::read,
+            values::update,
+        ),
         tags(
-            (name = "stats", description = "Stats API"),
-            (name = "values", description = "Values management API"),
+            (name = "stats", description = "Stats API."),
+            (name = "values", description = "Values management API."),
         )
     )]
     struct ApiDoc;
+
+    struct SecurityAddon;
+
+    impl Modify for SecurityAddon {
+        fn modify(&self, openapi: &mut utoipa::openapi::OpenApi) {
+            if let Some(components) = openapi.components.as_mut() {
+                components.add_security_scheme(
+                    "api_key",
+                    SecurityScheme::ApiKey(ApiKey::Header(ApiKeyValue::new("X-Auth-Token"))),
+                )
+            }
+        }
+    }
 
     Router::new()
         .merge(SwaggerUi::new("/swagger-ui").url("/api-doc/openapi.json", ApiDoc::openapi()))

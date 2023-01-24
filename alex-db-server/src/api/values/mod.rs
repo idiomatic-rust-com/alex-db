@@ -30,9 +30,13 @@ pub struct QueryParams {
     path = "/values",
     request_body = ValuePost,
     responses(
-        (status = 201, description = "Create value", body = ValueResponse),
-        (status = 401, description = "Unauthorized", body = ResponseError),
-        (status = 409, description = "Conflict", body = ResponseError),
+        (status = 201, description = "Value created.", body = ValueResponse),
+        (status = 401, description = "Unauthorized request.", body = ResponseError),
+        (status = 409, description = "Conflicting request.", body = ResponseError),
+    ),
+    security(
+        (),
+        ("api_key" = [])
     )
 )]
 pub async fn create(
@@ -62,13 +66,17 @@ pub async fn create(
 #[utoipa::path(
     delete,
     params(
-        ("key" = String, Path, description = "Key")
+        ("key" = String, Path, description = "Value key.")
     ),
     path = "/values/:key",
     responses(
-        (status = 204, description = "Delete value"),
-        (status = 401, description = "Unauthorized", body = ResponseError),
-        (status = 404, description = "Key not found", body = ResponseError),
+        (status = 204, description = "Value deleted."),
+        (status = 401, description = "Unauthorized request.", body = ResponseError),
+        (status = 404, description = "Value not found by key.", body = ResponseError),
+    ),
+    security(
+        (),
+        ("api_key" = [])
     )
 )]
 pub async fn delete(
@@ -91,8 +99,12 @@ pub async fn delete(
     get,
     path = "/values",
     responses(
-        (status = 200, description = "List of the values", body = [ValueResponse]),
-        (status = 401, description = "Unauthorized", body = ResponseError),
+        (status = 200, description = "List of values.", body = [ValueResponse]),
+        (status = 401, description = "Unauthorized request.", body = ResponseError),
+    ),
+    security(
+        (),
+        ("api_key" = [])
     )
 )]
 pub async fn list(
@@ -117,13 +129,17 @@ pub async fn list(
 #[utoipa::path(
     get,
     params(
-        ("key" = String, Path, description = "Key")
+        ("key" = String, Path, description = "Value key.")
     ),
     path = "/values/:key",
     responses(
-        (status = 200, description = "Read value", body = ValueResponse),
-        (status = 401, description = "Unauthorized", body = ResponseError),
-        (status = 404, description = "Key not found", body = ResponseError),
+        (status = 200, description = "Value read.", body = ValueResponse),
+        (status = 401, description = "Unauthorized request.", body = ResponseError),
+        (status = 404, description = "Value not found by key.", body = ResponseError),
+    ),
+    security(
+        (),
+        ("api_key" = [])
     )
 )]
 pub async fn read(
@@ -142,16 +158,21 @@ pub async fn read(
 
 #[axum_macros::debug_handler]
 #[utoipa::path(
-    post,
+    put,
     params(
-        ("key" = String, Path, description = "Key")
+        ("key" = String, Path, description = "Value key.")
     ),
     path = "/values/:key",
     request_body = ValuePut,
     responses(
-        (status = 200, description = "Update value", body = ValueResponse),
-        (status = 401, description = "Unauthorized", body = ResponseError),
-        (status = 404, description = "Key not found", body = ResponseError),
+        (status = 200, description = "Value updated.", body = ValueResponse),
+        (status = 401, description = "Unauthorized request.", body = ResponseError),
+        (status = 404, description = "Value not found by key.", body = ResponseError),
+        (status = 409, description = "Conflicting request.", body = ResponseError),
+    ),
+    security(
+        (),
+        ("api_key" = [])
     )
 )]
 pub async fn update(
