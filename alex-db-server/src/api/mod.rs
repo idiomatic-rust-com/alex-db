@@ -7,7 +7,7 @@ use alex_db_lib::{
 use axum::{
     error_handling::HandleErrorLayer,
     http::StatusCode,
-    routing::{delete, get},
+    routing::{delete, get, put},
     Router,
 };
 use std::{sync::Arc, time::Duration};
@@ -72,6 +72,8 @@ pub async fn router(db: Arc<Db>) -> Router {
             "/values/:key",
             delete(values::delete).get(values::read).put(values::update),
         )
+        .route("/values/:key/decrement", put(values::decrement))
+        .route("/values/:key/increment", put(values::increment))
         .layer(
             ServiceBuilder::new()
                 .layer(HandleErrorLayer::new(|error: BoxError| async move {
@@ -80,7 +82,7 @@ pub async fn router(db: Arc<Db>) -> Router {
                     } else {
                         Err((
                             StatusCode::INTERNAL_SERVER_ERROR,
-                            format!("Unhandled internal error: {}", error),
+                            format!("Unhandled internal error: {error}"),
                         ))
                     }
                 }))

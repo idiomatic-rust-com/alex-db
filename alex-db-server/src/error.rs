@@ -24,13 +24,13 @@ pub enum AppError {
 impl IntoResponse for AppError {
     fn into_response(self) -> Response {
         let (status, error_message) = match self {
-            AppError::Conflict => (StatusCode::CONFLICT, "Conflict"),
-            AppError::Generic(_error) => (StatusCode::INTERNAL_SERVER_ERROR, "Generic error"),
-            AppError::Header(_error) => (StatusCode::BAD_REQUEST, "Invalid header"),
-            AppError::NotFound => (StatusCode::NOT_FOUND, "Not found"),
-            AppError::Unauthorized => (StatusCode::UNAUTHORIZED, "Unauthorized"),
-            AppError::Uuid(_error) => (StatusCode::BAD_REQUEST, "Invalid api key"),
-            AppError::Validation(_error) => (StatusCode::BAD_REQUEST, "Invalid key"),
+            AppError::Conflict => (StatusCode::CONFLICT, "Conflicting request."),
+            AppError::Generic(_error) => (StatusCode::INTERNAL_SERVER_ERROR, "Generic error."),
+            AppError::Header(_error) => (StatusCode::BAD_REQUEST, "Invalid header."),
+            AppError::NotFound => (StatusCode::NOT_FOUND, "Not found."),
+            AppError::Unauthorized => (StatusCode::UNAUTHORIZED, "Unauthorized request."),
+            AppError::Uuid(_error) => (StatusCode::BAD_REQUEST, "Invalid API key."),
+            AppError::Validation(_error) => (StatusCode::BAD_REQUEST, "Invalid key."),
         };
 
         let body = Json(json!(ResponseError {

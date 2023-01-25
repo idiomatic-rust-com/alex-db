@@ -3,7 +3,9 @@ use crate::{
     error::Error,
     index::Index,
     stat_record::StatRecord,
-    value_record::{ValuePost, ValuePut, ValueRecord, ValueResponse},
+    value_record::{
+        Value, ValueDecrement, ValueIncrement, ValuePost, ValuePut, ValueRecord, ValueResponse,
+    },
     Result,
 };
 use chrono::{Duration, Utc};
@@ -88,7 +90,7 @@ impl Db {
 
     pub fn restore(&mut self) -> Result<()> {
         if let Some(data_dir) = &self.config.data_dir {
-            let api_keys_file_path = format!("{}/{}", data_dir, API_KEYS_FILE);
+            let api_keys_file_path = format!("{data_dir}/{API_KEYS_FILE}");
             if Path::new(&api_keys_file_path).exists() {
                 let compressed = fs::read(api_keys_file_path)?;
                 let uncompressed = decompress_size_prepended(&compressed)?;
@@ -96,7 +98,7 @@ impl Db {
                 self.api_keys = serde_json::from_str(&serialized)?;
             }
 
-            let created_at_index_file_path = format!("{}/{}", data_dir, CREATED_AT_INDEX_FILE);
+            let created_at_index_file_path = format!("{data_dir}/{CREATED_AT_INDEX_FILE}");
             if Path::new(&created_at_index_file_path).exists() {
                 let compressed = fs::read(created_at_index_file_path)?;
                 let uncompressed = decompress_size_prepended(&compressed)?;
@@ -104,7 +106,7 @@ impl Db {
                 self.indexes.created_at = serde_json::from_str(&serialized)?;
             }
 
-            let delete_at_index_file_path = format!("{}/{}", data_dir, DELETE_AT_INDEX_FILE);
+            let delete_at_index_file_path = format!("{data_dir}/{DELETE_AT_INDEX_FILE}");
             if Path::new(&delete_at_index_file_path).exists() {
                 let compressed = fs::read(delete_at_index_file_path)?;
                 let uncompressed = decompress_size_prepended(&compressed)?;
@@ -112,7 +114,7 @@ impl Db {
                 self.indexes.delete_at = serde_json::from_str(&serialized)?;
             }
 
-            let key_index_file_path = format!("{}/{}", data_dir, KEY_INDEX_FILE);
+            let key_index_file_path = format!("{data_dir}/{KEY_INDEX_FILE}");
             if Path::new(&key_index_file_path).exists() {
                 let compressed = fs::read(key_index_file_path)?;
                 let uncompressed = decompress_size_prepended(&compressed)?;
@@ -120,7 +122,7 @@ impl Db {
                 self.indexes.key = serde_json::from_str(&serialized)?;
             }
 
-            let updated_at_index_file_path = format!("{}/{}", data_dir, UPDATED_AT_INDEX_FILE);
+            let updated_at_index_file_path = format!("{data_dir}/{UPDATED_AT_INDEX_FILE}");
             if Path::new(&updated_at_index_file_path).exists() {
                 let compressed = fs::read(updated_at_index_file_path)?;
                 let uncompressed = decompress_size_prepended(&compressed)?;
@@ -128,7 +130,7 @@ impl Db {
                 self.indexes.updated_at = serde_json::from_str(&serialized)?;
             }
 
-            let values_file_path = format!("{}/{}", data_dir, DATABASE_FILE);
+            let values_file_path = format!("{data_dir}/{DATABASE_FILE}");
             if Path::new(&values_file_path).exists() {
                 let compressed = fs::read(values_file_path)?;
                 let uncompressed = decompress_size_prepended(&compressed)?;
@@ -149,37 +151,37 @@ impl Db {
                 self.config.save_triggered_by_threshold,
             ) {
                 let api_keys = self.api_keys.read().unwrap().to_owned();
-                let api_keys_file_path = format!("{}/{}", data_dir, API_KEYS_FILE);
+                let api_keys_file_path = format!("{data_dir}/{API_KEYS_FILE}");
                 let serialized = serde_json::to_vec(&*api_keys)?;
                 let compressed = compress_prepend_size(&serialized);
                 fs::write(api_keys_file_path, compressed)?;
 
                 let created_at_index = self.indexes.created_at.read().unwrap();
-                let created_at_index_file_path = format!("{}/{}", data_dir, CREATED_AT_INDEX_FILE);
+                let created_at_index_file_path = format!("{data_dir}/{CREATED_AT_INDEX_FILE}");
                 let serialized = serde_json::to_vec(&*created_at_index)?;
                 let compressed = compress_prepend_size(&serialized);
                 fs::write(created_at_index_file_path, compressed)?;
 
                 let delete_at_index = self.indexes.delete_at.read().unwrap();
-                let delete_at_index_file_path = format!("{}/{}", data_dir, DELETE_AT_INDEX_FILE);
+                let delete_at_index_file_path = format!("{data_dir}/{DELETE_AT_INDEX_FILE}");
                 let serialized = serde_json::to_vec(&*delete_at_index)?;
                 let compressed = compress_prepend_size(&serialized);
                 fs::write(delete_at_index_file_path, compressed)?;
 
                 let key_index = self.indexes.key.read().unwrap();
-                let key_index_file_path = format!("{}/{}", data_dir, KEY_INDEX_FILE);
+                let key_index_file_path = format!("{data_dir}/{KEY_INDEX_FILE}");
                 let serialized = serde_json::to_vec(&*key_index)?;
                 let compressed = compress_prepend_size(&serialized);
                 fs::write(key_index_file_path, compressed)?;
 
                 let updated_at_index = self.indexes.updated_at.read().unwrap();
-                let updated_at_index_file_path = format!("{}/{}", data_dir, UPDATED_AT_INDEX_FILE);
+                let updated_at_index_file_path = format!("{data_dir}/{UPDATED_AT_INDEX_FILE}");
                 let serialized = serde_json::to_vec(&*updated_at_index)?;
                 let compressed = compress_prepend_size(&serialized);
                 fs::write(updated_at_index_file_path, compressed)?;
 
                 let values = self.values.read().unwrap();
-                let values_file_path = format!("{}/{}", data_dir, DATABASE_FILE);
+                let values_file_path = format!("{data_dir}/{DATABASE_FILE}");
                 let serialized = serde_json::to_vec(&*values)?;
                 let compressed = compress_prepend_size(&serialized);
                 fs::write(values_file_path, compressed)?;
@@ -278,6 +280,55 @@ impl Db {
         Ok(result)
     }
 
+    pub fn try_decrement(
+        &self,
+        key: &str,
+        value_decrement: ValueDecrement,
+    ) -> Result<Option<ValueResponse>> {
+        let mut stats = self.stats.write().unwrap();
+        stats.inc_requests();
+
+        let key_index = self.indexes.key.write().unwrap();
+        let id = *key_index.get(key).unwrap();
+
+        let mut values = self.values.write().unwrap();
+        let original_value = values.get(&id).ok_or(Error::NotFound)?.clone();
+
+        let value;
+        match original_value.value {
+            Value::Integer(original_value) => match value_decrement.decrement {
+                None => value = Value::Integer(original_value - 1),
+                Some(decrement) => value = Value::Integer(original_value - decrement.abs()),
+            },
+            _ => return Ok(None),
+        };
+
+        let now = Utc::now();
+        let value_record = ValueRecord::new(
+            id,
+            &original_value.key,
+            &value,
+            original_value.created_at,
+            original_value.delete_at,
+            now,
+        );
+        values.insert(id, value_record);
+        let result = values.get(&id).cloned();
+
+        match result {
+            None => Ok(None),
+            Some(result) => {
+                stats.inc_writes();
+
+                let mut updated_at_index = self.indexes.updated_at.write().unwrap();
+                updated_at_index.remove(&original_value.updated_at.timestamp_nanos());
+                updated_at_index.insert(result.updated_at.timestamp_nanos(), id);
+
+                Ok(Some(result.into()))
+            }
+        }
+    }
+
     pub fn try_delete_by_id(&self, id: Uuid) -> Result<Option<ValueResponse>> {
         let mut stats = self.stats.write().unwrap();
         stats.inc_requests();
@@ -315,6 +366,55 @@ impl Db {
         drop(key_index);
 
         self.try_delete_by_id(id)
+    }
+
+    pub fn try_increment(
+        &self,
+        key: &str,
+        value_increment: ValueIncrement,
+    ) -> Result<Option<ValueResponse>> {
+        let mut stats = self.stats.write().unwrap();
+        stats.inc_requests();
+
+        let key_index = self.indexes.key.write().unwrap();
+        let id = *key_index.get(key).unwrap();
+
+        let mut values = self.values.write().unwrap();
+        let original_value = values.get(&id).ok_or(Error::NotFound)?.clone();
+
+        let value;
+        match original_value.value {
+            Value::Integer(original_value) => match value_increment.increment {
+                None => value = Value::Integer(original_value + 1),
+                Some(increment) => value = Value::Integer(original_value + increment.abs()),
+            },
+            _ => return Ok(None),
+        };
+
+        let now = Utc::now();
+        let value_record = ValueRecord::new(
+            id,
+            &original_value.key,
+            &value,
+            original_value.created_at,
+            original_value.delete_at,
+            now,
+        );
+        values.insert(id, value_record);
+        let result = values.get(&id).cloned();
+
+        match result {
+            None => Ok(None),
+            Some(result) => {
+                stats.inc_writes();
+
+                let mut updated_at_index = self.indexes.updated_at.write().unwrap();
+                updated_at_index.remove(&original_value.updated_at.timestamp_nanos());
+                updated_at_index.insert(result.updated_at.timestamp_nanos(), id);
+
+                Ok(Some(result.into()))
+            }
+        }
     }
 
     pub fn try_insert(&self, value_post: ValuePost) -> Result<Option<ValueResponse>> {

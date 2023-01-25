@@ -20,6 +20,16 @@ pub enum Value {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, ToSchema, Validate)]
+pub struct ValueDecrement {
+    pub decrement: Option<i64>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, ToSchema, Validate)]
+pub struct ValueIncrement {
+    pub increment: Option<i64>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, ToSchema, Validate)]
 pub struct ValuePost {
     #[validate(regex = "VALID_KEY")]
     pub key: String,
@@ -39,7 +49,7 @@ pub struct ValuePut {
 pub struct ValueRecord {
     pub id: Uuid,
     pub key: String,
-    value: Value,
+    pub value: Value,
     pub created_at: DateTime<Utc>,
     pub delete_at: Option<DateTime<Utc>>,
     pub updated_at: DateTime<Utc>,
