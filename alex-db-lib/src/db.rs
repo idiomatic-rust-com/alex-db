@@ -4,7 +4,8 @@ use crate::{
     index::Index,
     stat_record::StatRecord,
     value_record::{
-        Value, ValueDecrement, ValueIncrement, ValuePost, ValuePut, ValueRecord, ValueResponse,
+        Value, ValueAppend, ValueDecrement, ValueIncrement, ValuePost, ValuePrepend, ValuePut,
+        ValueRecord, ValueResponse,
     },
     Result,
 };
@@ -280,6 +281,57 @@ impl Db {
         Ok(result)
     }
 
+    pub fn try_append(
+        &self,
+        key: &str,
+        value_append: ValueAppend,
+    ) -> Result<Option<ValueResponse>> {
+        let mut stats = self.stats.write().unwrap();
+        stats.inc_requests();
+
+        let key_index = self.indexes.key.write().unwrap();
+        let id = *key_index.get(key).unwrap();
+
+        let mut values = self.values.write().unwrap();
+        let original_value = values.get(&id).ok_or(Error::NotFound)?.clone();
+
+        let value = match (original_value.value, value_append.append) {
+            (Value::Array(mut original_value), Value::Array(mut value_append)) => {
+                let mut new_value = vec![];
+                new_value.append(&mut original_value);
+                new_value.append(&mut value_append);
+
+                Value::Array(new_value)
+            }
+            _ => return Ok(None),
+        };
+
+        let now = Utc::now();
+        let value_record = ValueRecord::new(
+            id,
+            &original_value.key,
+            &value,
+            original_value.created_at,
+            original_value.delete_at,
+            now,
+        );
+        values.insert(id, value_record);
+        let result = values.get(&id).cloned();
+
+        match result {
+            None => Ok(None),
+            Some(result) => {
+                stats.inc_writes();
+
+                let mut updated_at_index = self.indexes.updated_at.write().unwrap();
+                updated_at_index.remove(&original_value.updated_at.timestamp_nanos());
+                updated_at_index.insert(result.updated_at.timestamp_nanos(), id);
+
+                Ok(Some(result.into()))
+            }
+        }
+    }
+
     pub fn try_decrement(
         &self,
         key: &str,
@@ -447,6 +499,57 @@ impl Db {
                 key_index.insert(value_post.key, id);
 
                 let mut updated_at_index = self.indexes.updated_at.write().unwrap();
+                updated_at_index.insert(result.updated_at.timestamp_nanos(), id);
+
+                Ok(Some(result.into()))
+            }
+        }
+    }
+
+    pub fn try_prepend(
+        &self,
+        key: &str,
+        value_prepend: ValuePrepend,
+    ) -> Result<Option<ValueResponse>> {
+        let mut stats = self.stats.write().unwrap();
+        stats.inc_requests();
+
+        let key_index = self.indexes.key.write().unwrap();
+        let id = *key_index.get(key).unwrap();
+
+        let mut values = self.values.write().unwrap();
+        let original_value = values.get(&id).ok_or(Error::NotFound)?.clone();
+
+        let value = match (original_value.value, value_prepend.prepend) {
+            (Value::Array(mut original_value), Value::Array(mut value_prepend)) => {
+                let mut new_value = vec![];
+                new_value.append(&mut value_prepend);
+                new_value.append(&mut original_value);
+
+                Value::Array(new_value)
+            }
+            _ => return Ok(None),
+        };
+
+        let now = Utc::now();
+        let value_record = ValueRecord::new(
+            id,
+            &original_value.key,
+            &value,
+            original_value.created_at,
+            original_value.delete_at,
+            now,
+        );
+        values.insert(id, value_record);
+        let result = values.get(&id).cloned();
+
+        match result {
+            None => Ok(None),
+            Some(result) => {
+                stats.inc_writes();
+
+                let mut updated_at_index = self.indexes.updated_at.write().unwrap();
+                updated_at_index.remove(&original_value.updated_at.timestamp_nanos());
                 updated_at_index.insert(result.updated_at.timestamp_nanos(), id);
 
                 Ok(Some(result.into()))

@@ -72,8 +72,10 @@ pub async fn router(db: Arc<Db>) -> Router {
             "/values/:key",
             delete(values::delete).get(values::read).put(values::update),
         )
+        .route("/values/:key/append", put(values::append))
         .route("/values/:key/decrement", put(values::decrement))
         .route("/values/:key/increment", put(values::increment))
+        .route("/values/:key/prepend", put(values::prepend))
         .layer(
             ServiceBuilder::new()
                 .layer(HandleErrorLayer::new(|error: BoxError| async move {

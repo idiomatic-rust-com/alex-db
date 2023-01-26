@@ -20,6 +20,11 @@ pub enum Value {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, ToSchema, Validate)]
+pub struct ValueAppend {
+    pub append: Value,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, ToSchema, Validate)]
 pub struct ValueDecrement {
     pub decrement: Option<i64>,
 }
@@ -35,6 +40,11 @@ pub struct ValuePost {
     pub key: String,
     pub ttl: Option<i64>,
     pub value: Value,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, ToSchema, Validate)]
+pub struct ValuePrepend {
+    pub prepend: Value,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, ToSchema, Validate)]

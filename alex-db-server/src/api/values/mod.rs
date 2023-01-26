@@ -1,7 +1,9 @@
 use crate::{access::Access, error::AppError};
 use alex_db_lib::{
     db::{Db, Direction, Sort},
-    value_record::{ValueDecrement, ValueIncrement, ValuePost, ValuePut},
+    value_record::{
+        ValueAppend, ValueDecrement, ValueIncrement, ValuePost, ValuePrepend, ValuePut,
+    },
 };
 use axum::{
     extract::{Path, Query, State},
@@ -22,6 +24,44 @@ pub struct QueryParams {
     pub page: Option<usize>,
     pub sort: Option<Sort>,
     pub starts_at: Option<DateTime<Utc>>,
+}
+
+#[axum_macros::debug_handler]
+#[utoipa::path(
+    put,
+    params(
+        ("key" = String, Path, description = "Value key.")
+    ),
+    path = "/values/:key/append",
+    request_body = ValueAppend,
+    responses(
+        (status = 200, description = "Value appended.", body = ValueResponse),
+        (status = 401, description = "Unauthorized request.", body = ResponseError),
+        (status = 404, description = "Value not found by key.", body = ResponseError),
+        (status = 409, description = "Conflicting request.", body = ResponseError),
+    ),
+    security(
+        (),
+        ("api_key" = [])
+    )
+)]
+pub async fn append(
+    access: Access,
+    State(db): State<Arc<Db>>,
+    Path(key): Path<String>,
+    Json(input): Json<ValueAppend>,
+) -> Result<impl IntoResponse, AppError> {
+    if !access.granted() {
+        return Err(AppError::Unauthorized);
+    }
+
+    input.validate()?;
+
+    db.try_select(&key)?.ok_or(AppError::NotFound)?;
+
+    let value = db.try_append(&key, input)?.ok_or(AppError::Conflict)?;
+
+    Ok((StatusCode::OK, Json(value)).into_response())
 }
 
 #[axum_macros::debug_handler]
@@ -205,6 +245,44 @@ pub async fn list(
 
 #[axum_macros::debug_handler]
 #[utoipa::path(
+    put,
+    params(
+        ("key" = String, Path, description = "Value key.")
+    ),
+    path = "/values/:key/prepend",
+    request_body = ValuePrepend,
+    responses(
+        (status = 200, description = "Value prepended.", body = ValueResponse),
+        (status = 401, description = "Unauthorized request.", body = ResponseError),
+        (status = 404, description = "Value not found by key.", body = ResponseError),
+        (status = 409, description = "Conflicting request.", body = ResponseError),
+    ),
+    security(
+        (),
+        ("api_key" = [])
+    )
+)]
+pub async fn prepend(
+    access: Access,
+    State(db): State<Arc<Db>>,
+    Path(key): Path<String>,
+    Json(input): Json<ValuePrepend>,
+) -> Result<impl IntoResponse, AppError> {
+    if !access.granted() {
+        return Err(AppError::Unauthorized);
+    }
+
+    input.validate()?;
+
+    db.try_select(&key)?.ok_or(AppError::NotFound)?;
+
+    let value = db.try_prepend(&key, input)?.ok_or(AppError::Conflict)?;
+
+    Ok((StatusCode::OK, Json(value)).into_response())
+}
+
+#[axum_macros::debug_handler]
+#[utoipa::path(
     get,
     params(
         ("key" = String, Path, description = "Value key.")
@@ -294,16 +372,165 @@ mod tests {
     use tower::ServiceExt;
 
     #[tokio::test]
-    async fn create_201_array_boolean() {
+    async fn append_200_array_array_boolean() {
         let mut db_config = DbConfig::default();
         db_config.enable_security_api_keys = false;
         let config = Config::new(db_config, 8080);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
+        let cloned_router = router.clone();
 
         let key = Word().fake::<String>();
         let value: bool = Faker.fake();
-        let value_array = vec![value];
+        let value_array = vec![vec![value]];
+
+        let response = router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::POST)
+                    .uri("/values")
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .body(Body::from(
+                        serde_json::json!({
+                            "key": &key,
+                            "value": &value_array
+                        })
+                        .to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::CREATED);
+
+        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+        let body: ValueResponse = serde_json::from_slice(&body).unwrap();
+
+        assert_eq!(body.key, key);
+        assert_eq!(
+            body.value,
+            Value::Array(vec![Value::Array(vec![Value::Boolean(value)])])
+        );
+
+        let append_value: bool = Faker.fake();
+        let append_value_array = vec![vec![append_value]];
+
+        let response = cloned_router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::PUT)
+                    .uri(format!("/values/{}/append", key))
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .body(Body::from(
+                        serde_json::json!({ "append": &append_value_array }).to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+        let body: ValueResponse = serde_json::from_slice(&body).unwrap();
+
+        assert_eq!(body.key, key);
+        assert_eq!(
+            body.value,
+            Value::Array(vec![
+                Value::Array(vec![Value::Boolean(value)]),
+                Value::Array(vec![Value::Boolean(append_value)])
+            ])
+        );
+    }
+
+    #[tokio::test]
+    async fn append_200_array_array_integer() {
+        let mut db_config = DbConfig::default();
+        db_config.enable_security_api_keys = false;
+        let config = Config::new(db_config, 8080);
+        let app = app::get_app(config).await.unwrap();
+        let router = app.router;
+        let cloned_router = router.clone();
+
+        let key = Word().fake::<String>();
+        let value: i64 = Faker.fake();
+        let value_array = vec![vec![value]];
+
+        let response = router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::POST)
+                    .uri("/values")
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .body(Body::from(
+                        serde_json::json!({
+                            "key": &key,
+                            "value": &value_array
+                        })
+                        .to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::CREATED);
+
+        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+        let body: ValueResponse = serde_json::from_slice(&body).unwrap();
+
+        assert_eq!(body.key, key);
+        assert_eq!(
+            body.value,
+            Value::Array(vec![Value::Array(vec![Value::Integer(value)])])
+        );
+
+        let append_value: i64 = Faker.fake();
+        let append_value_array = vec![vec![append_value]];
+
+        let response = cloned_router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::PUT)
+                    .uri(format!("/values/{}/append", key))
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .body(Body::from(
+                        serde_json::json!({ "append": &append_value_array }).to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+        let body: ValueResponse = serde_json::from_slice(&body).unwrap();
+
+        assert_eq!(body.key, key);
+        assert_eq!(
+            body.value,
+            Value::Array(vec![
+                Value::Array(vec![Value::Integer(value)]),
+                Value::Array(vec![Value::Integer(append_value)])
+            ])
+        );
+    }
+
+    #[tokio::test]
+    async fn append_200_array_boolean() {
+        let mut db_config = DbConfig::default();
+        db_config.enable_security_api_keys = false;
+        let config = Config::new(db_config, 8080);
+        let app = app::get_app(config).await.unwrap();
+        let router = app.router;
+        let cloned_router = router.clone();
+
+        let key = Word().fake::<String>();
+        let value: bool = Faker.fake();
+        let value_array = vec![value.clone()];
 
         let response = router
             .oneshot(
@@ -330,19 +557,116 @@ mod tests {
 
         assert_eq!(body.key, key);
         assert_eq!(body.value, Value::Array(vec![Value::Boolean(value)]));
+
+        let append_value: bool = Faker.fake();
+        let append_value_array = vec![append_value];
+
+        let response = cloned_router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::PUT)
+                    .uri(format!("/values/{}/append", key))
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .body(Body::from(
+                        serde_json::json!({ "append": &append_value_array }).to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+        let body: ValueResponse = serde_json::from_slice(&body).unwrap();
+
+        assert_eq!(body.key, key);
+        assert_eq!(
+            body.value,
+            Value::Array(vec![Value::Boolean(value), Value::Boolean(append_value)])
+        );
     }
 
     #[tokio::test]
-    async fn create_201_array_integer() {
+    async fn append_200_array_boolean_and_integer() {
         let mut db_config = DbConfig::default();
         db_config.enable_security_api_keys = false;
         let config = Config::new(db_config, 8080);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
+        let cloned_router = router.clone();
+
+        let key = Word().fake::<String>();
+        let value: bool = Faker.fake();
+        let value_array = vec![value.clone()];
+
+        let response = router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::POST)
+                    .uri("/values")
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .body(Body::from(
+                        serde_json::json!({
+                            "key": &key,
+                            "value": &value_array
+                        })
+                        .to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::CREATED);
+
+        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+        let body: ValueResponse = serde_json::from_slice(&body).unwrap();
+
+        assert_eq!(body.key, key);
+        assert_eq!(body.value, Value::Array(vec![Value::Boolean(value)]));
+
+        let append_value: i64 = Faker.fake();
+        let append_value_array = vec![append_value];
+
+        let response = cloned_router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::PUT)
+                    .uri(format!("/values/{}/append", key))
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .body(Body::from(
+                        serde_json::json!({ "append": &append_value_array }).to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+        let body: ValueResponse = serde_json::from_slice(&body).unwrap();
+
+        assert_eq!(body.key, key);
+        assert_eq!(
+            body.value,
+            Value::Array(vec![Value::Boolean(value), Value::Integer(append_value)])
+        );
+    }
+
+    #[tokio::test]
+    async fn append_200_array_integer() {
+        let mut db_config = DbConfig::default();
+        db_config.enable_security_api_keys = false;
+        let config = Config::new(db_config, 8080);
+        let app = app::get_app(config).await.unwrap();
+        let router = app.router;
+        let cloned_router = router.clone();
 
         let key = Word().fake::<String>();
         let value: i64 = Faker.fake();
-        let value_array = vec![value];
+        let value_array = vec![value.clone()];
 
         let response = router
             .oneshot(
@@ -369,15 +693,465 @@ mod tests {
 
         assert_eq!(body.key, key);
         assert_eq!(body.value, Value::Array(vec![Value::Integer(value)]));
+
+        let append_value: i64 = Faker.fake();
+        let append_value_array = vec![append_value];
+
+        let response = cloned_router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::PUT)
+                    .uri(format!("/values/{}/append", key))
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .body(Body::from(
+                        serde_json::json!({ "append": &append_value_array }).to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+        let body: ValueResponse = serde_json::from_slice(&body).unwrap();
+
+        assert_eq!(body.key, key);
+        assert_eq!(
+            body.value,
+            Value::Array(vec![Value::Integer(value), Value::Integer(append_value)])
+        );
     }
 
     #[tokio::test]
-    async fn create_201_array_string() {
+    async fn append_200_array_integer_and_string() {
         let mut db_config = DbConfig::default();
         db_config.enable_security_api_keys = false;
         let config = Config::new(db_config, 8080);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
+        let cloned_router = router.clone();
+
+        let key = Word().fake::<String>();
+        let value: i64 = Faker.fake();
+        let value_array = vec![value.clone()];
+
+        let response = router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::POST)
+                    .uri("/values")
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .body(Body::from(
+                        serde_json::json!({
+                            "key": &key,
+                            "value": &value_array
+                        })
+                        .to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::CREATED);
+
+        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+        let body: ValueResponse = serde_json::from_slice(&body).unwrap();
+
+        assert_eq!(body.key, key);
+        assert_eq!(body.value, Value::Array(vec![Value::Integer(value)]));
+
+        let append_value = Paragraph(2..10).fake::<String>();
+        let append_value_array = vec![append_value.clone()];
+
+        let response = cloned_router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::PUT)
+                    .uri(format!("/values/{}/append", key))
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .body(Body::from(
+                        serde_json::json!({ "append": &append_value_array }).to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+        let body: ValueResponse = serde_json::from_slice(&body).unwrap();
+
+        assert_eq!(body.key, key);
+        assert_eq!(
+            body.value,
+            Value::Array(vec![Value::Integer(value), Value::String(append_value)])
+        );
+    }
+
+    #[tokio::test]
+    async fn append_200_array_string() {
+        let mut db_config = DbConfig::default();
+        db_config.enable_security_api_keys = false;
+        let config = Config::new(db_config, 8080);
+        let app = app::get_app(config).await.unwrap();
+        let router = app.router;
+        let cloned_router = router.clone();
+
+        let key = Word().fake::<String>();
+        let value = Paragraph(2..10).fake::<String>();
+        let value_array = vec![value.clone()];
+
+        let response = router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::POST)
+                    .uri("/values")
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .body(Body::from(
+                        serde_json::json!({
+                            "key": &key,
+                            "value": &value_array
+                        })
+                        .to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::CREATED);
+
+        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+        let body: ValueResponse = serde_json::from_slice(&body).unwrap();
+
+        assert_eq!(body.key, key);
+        assert_eq!(body.value, Value::Array(vec![Value::String(value.clone())]));
+
+        let append_value = Paragraph(2..10).fake::<String>();
+        let append_value_array = vec![append_value.clone()];
+
+        let response = cloned_router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::PUT)
+                    .uri(format!("/values/{}/append", key))
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .body(Body::from(
+                        serde_json::json!({ "append": &append_value_array }).to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+        let body: ValueResponse = serde_json::from_slice(&body).unwrap();
+
+        assert_eq!(body.key, key);
+        assert_eq!(
+            body.value,
+            Value::Array(vec![Value::String(value), Value::String(append_value)])
+        );
+    }
+
+    #[tokio::test]
+    async fn append_200_array_string_and_boolean() {
+        let mut db_config = DbConfig::default();
+        db_config.enable_security_api_keys = false;
+        let config = Config::new(db_config, 8080);
+        let app = app::get_app(config).await.unwrap();
+        let router = app.router;
+        let cloned_router = router.clone();
+
+        let key = Word().fake::<String>();
+        let value = Paragraph(2..10).fake::<String>();
+        let value_array = vec![value.clone()];
+
+        let response = router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::POST)
+                    .uri("/values")
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .body(Body::from(
+                        serde_json::json!({
+                            "key": &key,
+                            "value": &value_array
+                        })
+                        .to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::CREATED);
+
+        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+        let body: ValueResponse = serde_json::from_slice(&body).unwrap();
+
+        assert_eq!(body.key, key);
+        assert_eq!(body.value, Value::Array(vec![Value::String(value.clone())]));
+
+        let append_value: bool = Faker.fake();
+        let append_value_array = vec![append_value.clone()];
+
+        let response = cloned_router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::PUT)
+                    .uri(format!("/values/{}/append", key))
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .body(Body::from(
+                        serde_json::json!({ "append": &append_value_array }).to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+        let body: ValueResponse = serde_json::from_slice(&body).unwrap();
+
+        assert_eq!(body.key, key);
+        assert_eq!(
+            body.value,
+            Value::Array(vec![Value::String(value), Value::Boolean(append_value)])
+        );
+    }
+
+    #[tokio::test]
+    async fn append_200_authentication() {
+        let mut db_config = DbConfig::default();
+        db_config.enable_security_api_keys = true;
+        let config = Config::new(db_config, 8080);
+        let app = app::get_app(config).await.unwrap();
+        let router = app.router;
+        let cloned_router = router.clone();
+
+        let key = Word().fake::<String>();
+        let value = Paragraph(2..10).fake::<String>();
+        let value_array = vec![value.clone()];
+
+        let response = router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::POST)
+                    .uri("/values")
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .header("X-Auth-Token".to_string(), app.api_key.unwrap().to_string())
+                    .body(Body::from(
+                        serde_json::json!({
+                            "key": &key,
+                            "value": &value_array
+                        })
+                        .to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::CREATED);
+
+        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+        let body: ValueResponse = serde_json::from_slice(&body).unwrap();
+
+        assert_eq!(body.key, key);
+        assert_eq!(body.value, Value::Array(vec![Value::String(value.clone())]));
+
+        let append_value = Paragraph(2..10).fake::<String>();
+        let append_value_array = vec![append_value.clone()];
+
+        let response = cloned_router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::PUT)
+                    .uri(format!("/values/{}/append", key))
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .header("X-Auth-Token".to_string(), app.api_key.unwrap().to_string())
+                    .body(Body::from(
+                        serde_json::json!({ "append": &append_value_array }).to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+        let body: ValueResponse = serde_json::from_slice(&body).unwrap();
+
+        assert_eq!(body.key, key);
+        assert_eq!(
+            body.value,
+            Value::Array(vec![Value::String(value), Value::String(append_value)])
+        );
+    }
+
+    #[tokio::test]
+    async fn append_401() {
+        let mut db_config = DbConfig::default();
+        db_config.enable_security_api_keys = true;
+        let config = Config::new(db_config, 8080);
+        let app = app::get_app(config).await.unwrap();
+        let router = app.router;
+        let cloned_router = router.clone();
+
+        let key = Word().fake::<String>();
+        let value = Paragraph(2..10).fake::<String>();
+        let value_array = vec![value.clone()];
+
+        let response = router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::POST)
+                    .uri("/values")
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .header("X-Auth-Token".to_string(), app.api_key.unwrap().to_string())
+                    .body(Body::from(
+                        serde_json::json!({
+                            "key": &key,
+                            "value": &value_array
+                        })
+                        .to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::CREATED);
+
+        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+        let body: ValueResponse = serde_json::from_slice(&body).unwrap();
+
+        assert_eq!(body.key, key);
+        assert_eq!(body.value, Value::Array(vec![Value::String(value)]));
+
+        let append_value = Paragraph(2..10).fake::<String>();
+        let append_value_array = vec![append_value.clone()];
+
+        let response = cloned_router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::PUT)
+                    .uri(format!("/values/{}/append", key))
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .body(Body::from(
+                        serde_json::json!({ "append": &append_value_array }).to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
+    }
+
+    #[tokio::test]
+    async fn append_404() {
+        let mut db_config = DbConfig::default();
+        db_config.enable_security_api_keys = false;
+        let config = Config::new(db_config, 8080);
+        let app = app::get_app(config).await.unwrap();
+        let router = app.router;
+
+        let key = Word().fake::<String>();
+        let append_value = Paragraph(2..10).fake::<String>();
+        let append_value_array = vec![append_value.clone()];
+
+        let response = router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::PUT)
+                    .uri(format!("/values/{}/decrement", key))
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .body(Body::from(
+                        serde_json::json!({ "append": &append_value_array }).to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::NOT_FOUND);
+    }
+
+    #[tokio::test]
+    async fn append_409() {
+        let mut db_config = DbConfig::default();
+        db_config.enable_security_api_keys = false;
+        let config = Config::new(db_config, 8080);
+        let app = app::get_app(config).await.unwrap();
+        let router = app.router;
+        let cloned_router = router.clone();
+
+        let key = Word().fake::<String>();
+        let value = Paragraph(2..10).fake::<String>();
+
+        let response = router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::POST)
+                    .uri("/values")
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .body(Body::from(
+                        serde_json::json!({
+                            "key": &key,
+                            "value": &value
+                        })
+                        .to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::CREATED);
+
+        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+        let body: ValueResponse = serde_json::from_slice(&body).unwrap();
+
+        assert_eq!(body.key, key);
+        assert_eq!(body.value, Value::String(value));
+
+        let append_value = Paragraph(2..10).fake::<String>();
+        let append_value_array = vec![append_value.clone()];
+
+        let response = cloned_router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::PUT)
+                    .uri(format!("/values/{}/append", key))
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .body(Body::from(
+                        serde_json::json!({ "append": &append_value_array }).to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::CONFLICT);
+    }
+
+    #[tokio::test]
+    async fn append_422() {
+        let mut db_config = DbConfig::default();
+        db_config.enable_security_api_keys = false;
+        let config = Config::new(db_config, 8080);
+        let app = app::get_app(config).await.unwrap();
+        let router = app.router;
+        let cloned_router = router.clone();
 
         let key = Word().fake::<String>();
         let value = Paragraph(2..10).fake::<String>();
@@ -408,6 +1182,24 @@ mod tests {
 
         assert_eq!(body.key, key);
         assert_eq!(body.value, Value::Array(vec![Value::String(value)]));
+
+        let value: f64 = Faker.fake();
+
+        let response = cloned_router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::PUT)
+                    .uri(format!("/values/{}/append", key))
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .body(Body::from(
+                        serde_json::json!({ "append": &value }).to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::UNPROCESSABLE_ENTITY);
     }
 
     #[tokio::test]
@@ -534,6 +1326,123 @@ mod tests {
             body.value,
             Value::Array(vec![Value::Array(vec![Value::String(value)])])
         );
+    }
+
+    #[tokio::test]
+    async fn create_201_array_boolean() {
+        let mut db_config = DbConfig::default();
+        db_config.enable_security_api_keys = false;
+        let config = Config::new(db_config, 8080);
+        let app = app::get_app(config).await.unwrap();
+        let router = app.router;
+
+        let key = Word().fake::<String>();
+        let value: bool = Faker.fake();
+        let value_array = vec![value];
+
+        let response = router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::POST)
+                    .uri("/values")
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .body(Body::from(
+                        serde_json::json!({
+                            "key": &key,
+                            "value": &value_array
+                        })
+                        .to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::CREATED);
+
+        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+        let body: ValueResponse = serde_json::from_slice(&body).unwrap();
+
+        assert_eq!(body.key, key);
+        assert_eq!(body.value, Value::Array(vec![Value::Boolean(value)]));
+    }
+
+    #[tokio::test]
+    async fn create_201_array_integer() {
+        let mut db_config = DbConfig::default();
+        db_config.enable_security_api_keys = false;
+        let config = Config::new(db_config, 8080);
+        let app = app::get_app(config).await.unwrap();
+        let router = app.router;
+
+        let key = Word().fake::<String>();
+        let value: i64 = Faker.fake();
+        let value_array = vec![value];
+
+        let response = router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::POST)
+                    .uri("/values")
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .body(Body::from(
+                        serde_json::json!({
+                            "key": &key,
+                            "value": &value_array
+                        })
+                        .to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::CREATED);
+
+        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+        let body: ValueResponse = serde_json::from_slice(&body).unwrap();
+
+        assert_eq!(body.key, key);
+        assert_eq!(body.value, Value::Array(vec![Value::Integer(value)]));
+    }
+
+    #[tokio::test]
+    async fn create_201_array_string() {
+        let mut db_config = DbConfig::default();
+        db_config.enable_security_api_keys = false;
+        let config = Config::new(db_config, 8080);
+        let app = app::get_app(config).await.unwrap();
+        let router = app.router;
+
+        let key = Word().fake::<String>();
+        let value = Paragraph(2..10).fake::<String>();
+        let value_array = vec![value.clone()];
+
+        let response = router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::POST)
+                    .uri("/values")
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .body(Body::from(
+                        serde_json::json!({
+                            "key": &key,
+                            "value": &value_array
+                        })
+                        .to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::CREATED);
+
+        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+        let body: ValueResponse = serde_json::from_slice(&body).unwrap();
+
+        assert_eq!(body.key, key);
+        assert_eq!(body.value, Value::Array(vec![Value::String(value)]));
     }
 
     #[tokio::test]
@@ -2044,6 +2953,837 @@ mod tests {
             .unwrap();
 
         assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
+    }
+
+    #[tokio::test]
+    async fn prepend_200_array_array_boolean() {
+        let mut db_config = DbConfig::default();
+        db_config.enable_security_api_keys = false;
+        let config = Config::new(db_config, 8080);
+        let app = app::get_app(config).await.unwrap();
+        let router = app.router;
+        let cloned_router = router.clone();
+
+        let key = Word().fake::<String>();
+        let value: bool = Faker.fake();
+        let value_array = vec![vec![value]];
+
+        let response = router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::POST)
+                    .uri("/values")
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .body(Body::from(
+                        serde_json::json!({
+                            "key": &key,
+                            "value": &value_array
+                        })
+                        .to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::CREATED);
+
+        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+        let body: ValueResponse = serde_json::from_slice(&body).unwrap();
+
+        assert_eq!(body.key, key);
+        assert_eq!(
+            body.value,
+            Value::Array(vec![Value::Array(vec![Value::Boolean(value)])])
+        );
+
+        let prepend_value: bool = Faker.fake();
+        let prepend_value_array = vec![vec![prepend_value]];
+
+        let response = cloned_router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::PUT)
+                    .uri(format!("/values/{}/prepend", key))
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .body(Body::from(
+                        serde_json::json!({ "prepend": &prepend_value_array }).to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+        let body: ValueResponse = serde_json::from_slice(&body).unwrap();
+
+        assert_eq!(body.key, key);
+        assert_eq!(
+            body.value,
+            Value::Array(vec![
+                Value::Array(vec![Value::Boolean(prepend_value)]),
+                Value::Array(vec![Value::Boolean(value)])
+            ])
+        );
+    }
+
+    #[tokio::test]
+    async fn prepend_200_array_array_integer() {
+        let mut db_config = DbConfig::default();
+        db_config.enable_security_api_keys = false;
+        let config = Config::new(db_config, 8080);
+        let app = app::get_app(config).await.unwrap();
+        let router = app.router;
+        let cloned_router = router.clone();
+
+        let key = Word().fake::<String>();
+        let value: i64 = Faker.fake();
+        let value_array = vec![vec![value]];
+
+        let response = router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::POST)
+                    .uri("/values")
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .body(Body::from(
+                        serde_json::json!({
+                            "key": &key,
+                            "value": &value_array
+                        })
+                        .to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::CREATED);
+
+        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+        let body: ValueResponse = serde_json::from_slice(&body).unwrap();
+
+        assert_eq!(body.key, key);
+        assert_eq!(
+            body.value,
+            Value::Array(vec![Value::Array(vec![Value::Integer(value)])])
+        );
+
+        let prepend_value: i64 = Faker.fake();
+        let prepend_value_array = vec![vec![prepend_value]];
+
+        let response = cloned_router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::PUT)
+                    .uri(format!("/values/{}/prepend", key))
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .body(Body::from(
+                        serde_json::json!({ "prepend": &prepend_value_array }).to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+        let body: ValueResponse = serde_json::from_slice(&body).unwrap();
+
+        assert_eq!(body.key, key);
+        assert_eq!(
+            body.value,
+            Value::Array(vec![
+                Value::Array(vec![Value::Integer(prepend_value)]),
+                Value::Array(vec![Value::Integer(value)])
+            ])
+        );
+    }
+
+    #[tokio::test]
+    async fn prepend_200_array_boolean() {
+        let mut db_config = DbConfig::default();
+        db_config.enable_security_api_keys = false;
+        let config = Config::new(db_config, 8080);
+        let app = app::get_app(config).await.unwrap();
+        let router = app.router;
+        let cloned_router = router.clone();
+
+        let key = Word().fake::<String>();
+        let value: bool = Faker.fake();
+        let value_array = vec![value.clone()];
+
+        let response = router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::POST)
+                    .uri("/values")
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .body(Body::from(
+                        serde_json::json!({
+                            "key": &key,
+                            "value": &value_array
+                        })
+                        .to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::CREATED);
+
+        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+        let body: ValueResponse = serde_json::from_slice(&body).unwrap();
+
+        assert_eq!(body.key, key);
+        assert_eq!(body.value, Value::Array(vec![Value::Boolean(value)]));
+
+        let prepend_value: bool = Faker.fake();
+        let prepend_value_array = vec![prepend_value];
+
+        let response = cloned_router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::PUT)
+                    .uri(format!("/values/{}/prepend", key))
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .body(Body::from(
+                        serde_json::json!({ "prepend": &prepend_value_array }).to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+        let body: ValueResponse = serde_json::from_slice(&body).unwrap();
+
+        assert_eq!(body.key, key);
+        assert_eq!(
+            body.value,
+            Value::Array(vec![Value::Boolean(prepend_value), Value::Boolean(value)])
+        );
+    }
+
+    #[tokio::test]
+    async fn prepend_200_array_boolean_and_integer() {
+        let mut db_config = DbConfig::default();
+        db_config.enable_security_api_keys = false;
+        let config = Config::new(db_config, 8080);
+        let app = app::get_app(config).await.unwrap();
+        let router = app.router;
+        let cloned_router = router.clone();
+
+        let key = Word().fake::<String>();
+        let value: bool = Faker.fake();
+        let value_array = vec![value.clone()];
+
+        let response = router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::POST)
+                    .uri("/values")
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .body(Body::from(
+                        serde_json::json!({
+                            "key": &key,
+                            "value": &value_array
+                        })
+                        .to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::CREATED);
+
+        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+        let body: ValueResponse = serde_json::from_slice(&body).unwrap();
+
+        assert_eq!(body.key, key);
+        assert_eq!(body.value, Value::Array(vec![Value::Boolean(value)]));
+
+        let prepend_value: i64 = Faker.fake();
+        let prepend_value_array = vec![prepend_value];
+
+        let response = cloned_router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::PUT)
+                    .uri(format!("/values/{}/prepend", key))
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .body(Body::from(
+                        serde_json::json!({ "prepend": &prepend_value_array }).to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+        let body: ValueResponse = serde_json::from_slice(&body).unwrap();
+
+        assert_eq!(body.key, key);
+        assert_eq!(
+            body.value,
+            Value::Array(vec![Value::Integer(prepend_value), Value::Boolean(value)])
+        );
+    }
+
+    #[tokio::test]
+    async fn prepend_200_array_integer() {
+        let mut db_config = DbConfig::default();
+        db_config.enable_security_api_keys = false;
+        let config = Config::new(db_config, 8080);
+        let app = app::get_app(config).await.unwrap();
+        let router = app.router;
+        let cloned_router = router.clone();
+
+        let key = Word().fake::<String>();
+        let value: i64 = Faker.fake();
+        let value_array = vec![value.clone()];
+
+        let response = router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::POST)
+                    .uri("/values")
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .body(Body::from(
+                        serde_json::json!({
+                            "key": &key,
+                            "value": &value_array
+                        })
+                        .to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::CREATED);
+
+        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+        let body: ValueResponse = serde_json::from_slice(&body).unwrap();
+
+        assert_eq!(body.key, key);
+        assert_eq!(body.value, Value::Array(vec![Value::Integer(value)]));
+
+        let prepend_value: i64 = Faker.fake();
+        let prepend_value_array = vec![prepend_value];
+
+        let response = cloned_router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::PUT)
+                    .uri(format!("/values/{}/prepend", key))
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .body(Body::from(
+                        serde_json::json!({ "prepend": &prepend_value_array }).to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+        let body: ValueResponse = serde_json::from_slice(&body).unwrap();
+
+        assert_eq!(body.key, key);
+        assert_eq!(
+            body.value,
+            Value::Array(vec![Value::Integer(prepend_value), Value::Integer(value)])
+        );
+    }
+
+    #[tokio::test]
+    async fn prepend_200_array_integer_and_string() {
+        let mut db_config = DbConfig::default();
+        db_config.enable_security_api_keys = false;
+        let config = Config::new(db_config, 8080);
+        let app = app::get_app(config).await.unwrap();
+        let router = app.router;
+        let cloned_router = router.clone();
+
+        let key = Word().fake::<String>();
+        let value: i64 = Faker.fake();
+        let value_array = vec![value.clone()];
+
+        let response = router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::POST)
+                    .uri("/values")
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .body(Body::from(
+                        serde_json::json!({
+                            "key": &key,
+                            "value": &value_array
+                        })
+                        .to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::CREATED);
+
+        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+        let body: ValueResponse = serde_json::from_slice(&body).unwrap();
+
+        assert_eq!(body.key, key);
+        assert_eq!(body.value, Value::Array(vec![Value::Integer(value)]));
+
+        let prepend_value = Paragraph(2..10).fake::<String>();
+        let prepend_value_array = vec![prepend_value.clone()];
+
+        let response = cloned_router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::PUT)
+                    .uri(format!("/values/{}/prepend", key))
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .body(Body::from(
+                        serde_json::json!({ "prepend": &prepend_value_array }).to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+        let body: ValueResponse = serde_json::from_slice(&body).unwrap();
+
+        assert_eq!(body.key, key);
+        assert_eq!(
+            body.value,
+            Value::Array(vec![Value::String(prepend_value), Value::Integer(value)])
+        );
+    }
+
+    #[tokio::test]
+    async fn prepend_200_array_string() {
+        let mut db_config = DbConfig::default();
+        db_config.enable_security_api_keys = false;
+        let config = Config::new(db_config, 8080);
+        let app = app::get_app(config).await.unwrap();
+        let router = app.router;
+        let cloned_router = router.clone();
+
+        let key = Word().fake::<String>();
+        let value = Paragraph(2..10).fake::<String>();
+        let value_array = vec![value.clone()];
+
+        let response = router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::POST)
+                    .uri("/values")
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .body(Body::from(
+                        serde_json::json!({
+                            "key": &key,
+                            "value": &value_array
+                        })
+                        .to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::CREATED);
+
+        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+        let body: ValueResponse = serde_json::from_slice(&body).unwrap();
+
+        assert_eq!(body.key, key);
+        assert_eq!(body.value, Value::Array(vec![Value::String(value.clone())]));
+
+        let prepend_value = Paragraph(2..10).fake::<String>();
+        let prepend_value_array = vec![prepend_value.clone()];
+
+        let response = cloned_router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::PUT)
+                    .uri(format!("/values/{}/prepend", key))
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .body(Body::from(
+                        serde_json::json!({ "prepend": &prepend_value_array }).to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+        let body: ValueResponse = serde_json::from_slice(&body).unwrap();
+
+        assert_eq!(body.key, key);
+        assert_eq!(
+            body.value,
+            Value::Array(vec![Value::String(prepend_value), Value::String(value)])
+        );
+    }
+
+    #[tokio::test]
+    async fn prepend_200_array_string_and_boolean() {
+        let mut db_config = DbConfig::default();
+        db_config.enable_security_api_keys = false;
+        let config = Config::new(db_config, 8080);
+        let app = app::get_app(config).await.unwrap();
+        let router = app.router;
+        let cloned_router = router.clone();
+
+        let key = Word().fake::<String>();
+        let value = Paragraph(2..10).fake::<String>();
+        let value_array = vec![value.clone()];
+
+        let response = router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::POST)
+                    .uri("/values")
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .body(Body::from(
+                        serde_json::json!({
+                            "key": &key,
+                            "value": &value_array
+                        })
+                        .to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::CREATED);
+
+        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+        let body: ValueResponse = serde_json::from_slice(&body).unwrap();
+
+        assert_eq!(body.key, key);
+        assert_eq!(body.value, Value::Array(vec![Value::String(value.clone())]));
+
+        let prepend_value: bool = Faker.fake();
+        let prepend_value_array = vec![prepend_value.clone()];
+
+        let response = cloned_router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::PUT)
+                    .uri(format!("/values/{}/prepend", key))
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .body(Body::from(
+                        serde_json::json!({ "prepend": &prepend_value_array }).to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+        let body: ValueResponse = serde_json::from_slice(&body).unwrap();
+
+        assert_eq!(body.key, key);
+        assert_eq!(
+            body.value,
+            Value::Array(vec![Value::Boolean(prepend_value), Value::String(value)])
+        );
+    }
+
+    #[tokio::test]
+    async fn prepend_200_authentication() {
+        let mut db_config = DbConfig::default();
+        db_config.enable_security_api_keys = true;
+        let config = Config::new(db_config, 8080);
+        let app = app::get_app(config).await.unwrap();
+        let router = app.router;
+        let cloned_router = router.clone();
+
+        let key = Word().fake::<String>();
+        let value = Paragraph(2..10).fake::<String>();
+        let value_array = vec![value.clone()];
+
+        let response = router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::POST)
+                    .uri("/values")
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .header("X-Auth-Token".to_string(), app.api_key.unwrap().to_string())
+                    .body(Body::from(
+                        serde_json::json!({
+                            "key": &key,
+                            "value": &value_array
+                        })
+                        .to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::CREATED);
+
+        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+        let body: ValueResponse = serde_json::from_slice(&body).unwrap();
+
+        assert_eq!(body.key, key);
+        assert_eq!(body.value, Value::Array(vec![Value::String(value.clone())]));
+
+        let prepend_value = Paragraph(2..10).fake::<String>();
+        let prepend_value_array = vec![prepend_value.clone()];
+
+        let response = cloned_router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::PUT)
+                    .uri(format!("/values/{}/prepend", key))
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .header("X-Auth-Token".to_string(), app.api_key.unwrap().to_string())
+                    .body(Body::from(
+                        serde_json::json!({ "prepend": &prepend_value_array }).to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+        let body: ValueResponse = serde_json::from_slice(&body).unwrap();
+
+        assert_eq!(body.key, key);
+        assert_eq!(
+            body.value,
+            Value::Array(vec![Value::String(prepend_value), Value::String(value)])
+        );
+    }
+
+    #[tokio::test]
+    async fn prepend_401() {
+        let mut db_config = DbConfig::default();
+        db_config.enable_security_api_keys = true;
+        let config = Config::new(db_config, 8080);
+        let app = app::get_app(config).await.unwrap();
+        let router = app.router;
+        let cloned_router = router.clone();
+
+        let key = Word().fake::<String>();
+        let value = Paragraph(2..10).fake::<String>();
+        let value_array = vec![value.clone()];
+
+        let response = router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::POST)
+                    .uri("/values")
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .header("X-Auth-Token".to_string(), app.api_key.unwrap().to_string())
+                    .body(Body::from(
+                        serde_json::json!({
+                            "key": &key,
+                            "value": &value_array
+                        })
+                        .to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::CREATED);
+
+        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+        let body: ValueResponse = serde_json::from_slice(&body).unwrap();
+
+        assert_eq!(body.key, key);
+        assert_eq!(body.value, Value::Array(vec![Value::String(value)]));
+
+        let prepend_value = Paragraph(2..10).fake::<String>();
+        let prepend_value_array = vec![prepend_value.clone()];
+
+        let response = cloned_router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::PUT)
+                    .uri(format!("/values/{}/prepend", key))
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .body(Body::from(
+                        serde_json::json!({ "prepend": &prepend_value_array }).to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
+    }
+
+    #[tokio::test]
+    async fn prepend_404() {
+        let mut db_config = DbConfig::default();
+        db_config.enable_security_api_keys = false;
+        let config = Config::new(db_config, 8080);
+        let app = app::get_app(config).await.unwrap();
+        let router = app.router;
+
+        let key = Word().fake::<String>();
+        let prepend_value = Paragraph(2..10).fake::<String>();
+        let prepend_value_array = vec![prepend_value.clone()];
+
+        let response = router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::PUT)
+                    .uri(format!("/values/{}/decrement", key))
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .body(Body::from(
+                        serde_json::json!({ "prepend": &prepend_value_array }).to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::NOT_FOUND);
+    }
+
+    #[tokio::test]
+    async fn prepend_409() {
+        let mut db_config = DbConfig::default();
+        db_config.enable_security_api_keys = false;
+        let config = Config::new(db_config, 8080);
+        let app = app::get_app(config).await.unwrap();
+        let router = app.router;
+        let cloned_router = router.clone();
+
+        let key = Word().fake::<String>();
+        let value = Paragraph(2..10).fake::<String>();
+
+        let response = router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::POST)
+                    .uri("/values")
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .body(Body::from(
+                        serde_json::json!({
+                            "key": &key,
+                            "value": &value
+                        })
+                        .to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::CREATED);
+
+        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+        let body: ValueResponse = serde_json::from_slice(&body).unwrap();
+
+        assert_eq!(body.key, key);
+        assert_eq!(body.value, Value::String(value));
+
+        let prepend_value = Paragraph(2..10).fake::<String>();
+        let prepend_value_array = vec![prepend_value.clone()];
+
+        let response = cloned_router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::PUT)
+                    .uri(format!("/values/{}/prepend", key))
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .body(Body::from(
+                        serde_json::json!({ "prepend": &prepend_value_array }).to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::CONFLICT);
+    }
+
+    #[tokio::test]
+    async fn prepend_422() {
+        let mut db_config = DbConfig::default();
+        db_config.enable_security_api_keys = false;
+        let config = Config::new(db_config, 8080);
+        let app = app::get_app(config).await.unwrap();
+        let router = app.router;
+        let cloned_router = router.clone();
+
+        let key = Word().fake::<String>();
+        let value = Paragraph(2..10).fake::<String>();
+        let value_array = vec![value.clone()];
+
+        let response = router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::POST)
+                    .uri("/values")
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .body(Body::from(
+                        serde_json::json!({
+                            "key": &key,
+                            "value": &value_array
+                        })
+                        .to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::CREATED);
+
+        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+        let body: ValueResponse = serde_json::from_slice(&body).unwrap();
+
+        assert_eq!(body.key, key);
+        assert_eq!(body.value, Value::Array(vec![Value::String(value)]));
+
+        let value: f64 = Faker.fake();
+
+        let response = cloned_router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::PUT)
+                    .uri(format!("/values/{}/prepend", key))
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .body(Body::from(
+                        serde_json::json!({ "prepend": &value }).to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::UNPROCESSABLE_ENTITY);
     }
 
     #[tokio::test]
