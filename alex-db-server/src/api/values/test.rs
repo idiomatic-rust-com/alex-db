@@ -1431,6 +1431,195 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn decrement_200_max() {
+        let mut db_config = DbConfig::default();
+        db_config.enable_security_api_keys = false;
+        let config = Config::new(db_config, 8080);
+        let app = app::get_app(config).await.unwrap();
+        let router = app.router;
+        let cloned_router = router.clone();
+
+        let key = Word().fake::<String>();
+        let value = 0;
+
+        let response = router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::POST)
+                    .uri("/values")
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .body(Body::from(
+                        serde_json::json!({
+                            "key": &key,
+                            "value": &value
+                        })
+                        .to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::CREATED);
+
+        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+        let body: ValueResponse = serde_json::from_slice(&body).unwrap();
+
+        assert_eq!(body.key, key);
+        assert_eq!(body.value, Value::Integer(value));
+
+        let decrement_value = i64::MAX;
+
+        let response = cloned_router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::PUT)
+                    .uri(format!("/values/{}/decrement", key))
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .body(Body::from(
+                        serde_json::json!({ "decrement": &decrement_value }).to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+        let body: ValueResponse = serde_json::from_slice(&body).unwrap();
+
+        assert_eq!(body.key, key);
+        assert_eq!(body.value, Value::Integer(i64::MIN + 1));
+    }
+
+    #[tokio::test]
+    async fn decrement_200_min() {
+        let mut db_config = DbConfig::default();
+        db_config.enable_security_api_keys = false;
+        let config = Config::new(db_config, 8080);
+        let app = app::get_app(config).await.unwrap();
+        let router = app.router;
+        let cloned_router = router.clone();
+
+        let key = Word().fake::<String>();
+        let value = 0;
+
+        let response = router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::POST)
+                    .uri("/values")
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .body(Body::from(
+                        serde_json::json!({
+                            "key": &key,
+                            "value": &value
+                        })
+                        .to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::CREATED);
+
+        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+        let body: ValueResponse = serde_json::from_slice(&body).unwrap();
+
+        assert_eq!(body.key, key);
+        assert_eq!(body.value, Value::Integer(value));
+
+        let decrement_value = i64::MIN;
+
+        let response = cloned_router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::PUT)
+                    .uri(format!("/values/{}/decrement", key))
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .body(Body::from(
+                        serde_json::json!({ "decrement": &decrement_value }).to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+        let body: ValueResponse = serde_json::from_slice(&body).unwrap();
+
+        assert_eq!(body.key, key);
+        assert_eq!(body.value, Value::Integer(0));
+    }
+
+    #[tokio::test]
+    async fn decrement_200_min_plus_1() {
+        let mut db_config = DbConfig::default();
+        db_config.enable_security_api_keys = false;
+        let config = Config::new(db_config, 8080);
+        let app = app::get_app(config).await.unwrap();
+        let router = app.router;
+        let cloned_router = router.clone();
+
+        let key = Word().fake::<String>();
+        let value = 0;
+
+        let response = router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::POST)
+                    .uri("/values")
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .body(Body::from(
+                        serde_json::json!({
+                            "key": &key,
+                            "value": &value
+                        })
+                        .to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::CREATED);
+
+        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+        let body: ValueResponse = serde_json::from_slice(&body).unwrap();
+
+        assert_eq!(body.key, key);
+        assert_eq!(body.value, Value::Integer(value));
+
+        let decrement_value = i64::MIN + 1;
+
+        let response = cloned_router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::PUT)
+                    .uri(format!("/values/{}/decrement", key))
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .body(Body::from(
+                        serde_json::json!({ "decrement": &decrement_value }).to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+        let body: ValueResponse = serde_json::from_slice(&body).unwrap();
+
+        assert_eq!(body.key, key);
+        assert_eq!(body.value, Value::Integer(i64::MIN + 1));
+    }
+
+    #[tokio::test]
     async fn decrement_200_authentication() {
         let mut db_config = DbConfig::default();
         db_config.enable_security_api_keys = true;
@@ -2046,6 +2235,195 @@ mod tests {
 
         assert_eq!(body.key, key);
         assert_eq!(body.value, Value::Integer(value + increment_value.abs()));
+    }
+
+    #[tokio::test]
+    async fn increment_200_max() {
+        let mut db_config = DbConfig::default();
+        db_config.enable_security_api_keys = false;
+        let config = Config::new(db_config, 8080);
+        let app = app::get_app(config).await.unwrap();
+        let router = app.router;
+        let cloned_router = router.clone();
+
+        let key = Word().fake::<String>();
+        let value = 0;
+
+        let response = router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::POST)
+                    .uri("/values")
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .body(Body::from(
+                        serde_json::json!({
+                            "key": &key,
+                            "value": &value
+                        })
+                        .to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::CREATED);
+
+        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+        let body: ValueResponse = serde_json::from_slice(&body).unwrap();
+
+        assert_eq!(body.key, key);
+        assert_eq!(body.value, Value::Integer(value));
+
+        let increment_value = i64::MAX;
+
+        let response = cloned_router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::PUT)
+                    .uri(format!("/values/{}/increment", key))
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .body(Body::from(
+                        serde_json::json!({ "increment": &increment_value }).to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+        let body: ValueResponse = serde_json::from_slice(&body).unwrap();
+
+        assert_eq!(body.key, key);
+        assert_eq!(body.value, Value::Integer(i64::MAX));
+    }
+
+    #[tokio::test]
+    async fn increment_200_min() {
+        let mut db_config = DbConfig::default();
+        db_config.enable_security_api_keys = false;
+        let config = Config::new(db_config, 8080);
+        let app = app::get_app(config).await.unwrap();
+        let router = app.router;
+        let cloned_router = router.clone();
+
+        let key = Word().fake::<String>();
+        let value = 0;
+
+        let response = router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::POST)
+                    .uri("/values")
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .body(Body::from(
+                        serde_json::json!({
+                            "key": &key,
+                            "value": &value
+                        })
+                        .to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::CREATED);
+
+        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+        let body: ValueResponse = serde_json::from_slice(&body).unwrap();
+
+        assert_eq!(body.key, key);
+        assert_eq!(body.value, Value::Integer(value));
+
+        let increment_value = i64::MIN;
+
+        let response = cloned_router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::PUT)
+                    .uri(format!("/values/{}/increment", key))
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .body(Body::from(
+                        serde_json::json!({ "increment": &increment_value }).to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+        let body: ValueResponse = serde_json::from_slice(&body).unwrap();
+
+        assert_eq!(body.key, key);
+        assert_eq!(body.value, Value::Integer(0));
+    }
+
+    #[tokio::test]
+    async fn increment_200_min_plus1() {
+        let mut db_config = DbConfig::default();
+        db_config.enable_security_api_keys = false;
+        let config = Config::new(db_config, 8080);
+        let app = app::get_app(config).await.unwrap();
+        let router = app.router;
+        let cloned_router = router.clone();
+
+        let key = Word().fake::<String>();
+        let value = 0;
+
+        let response = router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::POST)
+                    .uri("/values")
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .body(Body::from(
+                        serde_json::json!({
+                            "key": &key,
+                            "value": &value
+                        })
+                        .to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::CREATED);
+
+        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+        let body: ValueResponse = serde_json::from_slice(&body).unwrap();
+
+        assert_eq!(body.key, key);
+        assert_eq!(body.value, Value::Integer(value));
+
+        let increment_value = i64::MIN + 1;
+
+        let response = cloned_router
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::PUT)
+                    .uri(format!("/values/{}/increment", key))
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .body(Body::from(
+                        serde_json::json!({ "increment": &increment_value }).to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+        let body: ValueResponse = serde_json::from_slice(&body).unwrap();
+
+        assert_eq!(body.key, key);
+        assert_eq!(body.value, Value::Integer(i64::MAX));
     }
 
     #[tokio::test]

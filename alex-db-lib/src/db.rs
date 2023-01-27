@@ -346,11 +346,16 @@ impl Db {
         let mut values = self.values.write().unwrap();
         let original_value = values.get(&id).ok_or(Error::NotFound)?.clone();
 
-        let value;
-        match original_value.value {
+        let value = match original_value.value {
             Value::Integer(original_value) => match value_decrement.decrement {
-                None => value = Value::Integer(original_value - 1),
-                Some(decrement) => value = Value::Integer(original_value - decrement.abs()),
+                None => Value::Integer(original_value.saturating_sub(1)),
+                Some(decrement) => {
+                    if let Some(abs) = decrement.checked_abs() {
+                        Value::Integer(original_value.saturating_sub(abs))
+                    } else {
+                        Value::Integer(original_value)
+                    }
+                }
             },
             _ => return Ok(None),
         };
@@ -434,11 +439,16 @@ impl Db {
         let mut values = self.values.write().unwrap();
         let original_value = values.get(&id).ok_or(Error::NotFound)?.clone();
 
-        let value;
-        match original_value.value {
+        let value = match original_value.value {
             Value::Integer(original_value) => match value_increment.increment {
-                None => value = Value::Integer(original_value + 1),
-                Some(increment) => value = Value::Integer(original_value + increment.abs()),
+                None => Value::Integer(original_value.saturating_add(1)),
+                Some(increment) => {
+                    if let Some(abs) = increment.checked_abs() {
+                        Value::Integer(original_value.saturating_add(abs))
+                    } else {
+                        Value::Integer(original_value)
+                    }
+                }
             },
             _ => return Ok(None),
         };
