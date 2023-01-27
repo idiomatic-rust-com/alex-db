@@ -2,7 +2,10 @@ use crate::error::ResponseError;
 use alex_db_lib::{
     db::Db,
     stat_record::StatRecord,
-    value_record::{Value, ValuePost, ValuePut, ValueResponse},
+    value_record::{
+        Value, ValueAppend, ValueDecrement, ValueIncrement, ValuePopBack, ValuePopFront, ValuePost,
+        ValuePrepend, ValuePut, ValueResponse,
+    },
 };
 use axum::{
     error_handling::HandleErrorLayer,
@@ -30,7 +33,13 @@ pub async fn router(db: Arc<Db>) -> Router {
                 ResponseError,
                 StatRecord,
                 Value,
+                ValueAppend,
+                ValueDecrement,
+                ValueIncrement,
+                ValuePopBack,
+                ValuePopFront,
                 ValuePost,
+                ValuePrepend,
                 ValuePut,
                 ValueResponse,
             )
@@ -38,9 +47,15 @@ pub async fn router(db: Arc<Db>) -> Router {
         modifiers(&SecurityAddon),
         paths(
             stats::list,
+            values::append,
             values::create,
+            values::decrement,
             values::delete,
+            values::increment,
             values::list,
+            values::pop_back,
+            values::pop_front,
+            values::prepend,
             values::read,
             values::update,
         ),
@@ -75,6 +90,8 @@ pub async fn router(db: Arc<Db>) -> Router {
         .route("/values/:key/append", put(values::append))
         .route("/values/:key/decrement", put(values::decrement))
         .route("/values/:key/increment", put(values::increment))
+        .route("/values/:key/pop-back", put(values::pop_back))
+        .route("/values/:key/pop-front", put(values::pop_front))
         .route("/values/:key/prepend", put(values::prepend))
         .layer(
             ServiceBuilder::new()

@@ -2,7 +2,8 @@ use crate::{access::Access, error::AppError};
 use alex_db_lib::{
     db::{Db, Direction, Sort},
     value_record::{
-        ValueAppend, ValueDecrement, ValueIncrement, ValuePost, ValuePrepend, ValuePut,
+        ValueAppend, ValueDecrement, ValueIncrement, ValuePopBack, ValuePopFront, ValuePost,
+        ValuePrepend, ValuePut,
     },
 };
 use axum::{
@@ -241,6 +242,84 @@ pub async fn list(
     let sort = query_params.sort.unwrap_or(Sort::CreatedAt);
 
     let values = db.select_all(direction, query_params.limit, query_params.page, sort)?;
+
+    Ok((StatusCode::OK, Json(values)).into_response())
+}
+
+#[axum_macros::debug_handler]
+#[utoipa::path(
+    put,
+    params(
+        ("key" = String, Path, description = "Value key.")
+    ),
+    path = "/values/:key/pop-back",
+    request_body = ValuePopBack,
+    responses(
+        (status = 200, description = "Value prepended.", body = [Value]),
+        (status = 401, description = "Unauthorized request.", body = ResponseError),
+        (status = 404, description = "Value not found by key.", body = ResponseError),
+        (status = 409, description = "Conflicting request.", body = ResponseError),
+        (status = 422, description = "Unprocessable entity."),
+    ),
+    security(
+        (),
+        ("api_key" = [])
+    )
+)]
+pub async fn pop_back(
+    access: Access,
+    State(db): State<Arc<Db>>,
+    Path(key): Path<String>,
+    Json(input): Json<ValuePopBack>,
+) -> Result<impl IntoResponse, AppError> {
+    if !access.granted() {
+        return Err(AppError::Unauthorized);
+    }
+
+    input.validate()?;
+
+    db.try_select(&key)?.ok_or(AppError::NotFound)?;
+
+    let values = db.try_pop_back(&key, input)?.ok_or(AppError::Conflict)?;
+
+    Ok((StatusCode::OK, Json(values)).into_response())
+}
+
+#[axum_macros::debug_handler]
+#[utoipa::path(
+    put,
+    params(
+        ("key" = String, Path, description = "Value key.")
+    ),
+    path = "/values/:key/pop-front",
+    request_body = ValuePopFront,
+    responses(
+        (status = 200, description = "Value prepended.", body = [Value]),
+        (status = 401, description = "Unauthorized request.", body = ResponseError),
+        (status = 404, description = "Value not found by key.", body = ResponseError),
+        (status = 409, description = "Conflicting request.", body = ResponseError),
+        (status = 422, description = "Unprocessable entity."),
+    ),
+    security(
+        (),
+        ("api_key" = [])
+    )
+)]
+pub async fn pop_front(
+    access: Access,
+    State(db): State<Arc<Db>>,
+    Path(key): Path<String>,
+    Json(input): Json<ValuePopFront>,
+) -> Result<impl IntoResponse, AppError> {
+    if !access.granted() {
+        return Err(AppError::Unauthorized);
+    }
+
+    input.validate()?;
+
+    db.try_select(&key)?.ok_or(AppError::NotFound)?;
+
+    let values = db.try_pop_front(&key, input)?.ok_or(AppError::Conflict)?;
 
     Ok((StatusCode::OK, Json(values)).into_response())
 }

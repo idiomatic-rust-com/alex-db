@@ -2,6 +2,7 @@ use chrono::{DateTime, Utc};
 use lazy_static::lazy_static;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
+use std::collections::VecDeque;
 use utoipa::ToSchema;
 use uuid::Uuid;
 use validator::Validate;
@@ -13,7 +14,7 @@ lazy_static! {
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize, ToSchema)]
 #[serde(untagged)]
 pub enum Value {
-    Array(Vec<Value>),
+    Array(VecDeque<Value>),
     Boolean(bool),
     Integer(i64),
     String(String),
@@ -40,6 +41,16 @@ pub struct ValuePost {
     pub key: String,
     pub ttl: Option<i64>,
     pub value: Value,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, ToSchema, Validate)]
+pub struct ValuePopBack {
+    pub pop_back: Option<usize>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, ToSchema, Validate)]
+pub struct ValuePopFront {
+    pub pop_front: Option<usize>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, ToSchema, Validate)]

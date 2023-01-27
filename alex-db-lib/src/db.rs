@@ -4,8 +4,8 @@ use crate::{
     index::Index,
     stat_record::StatRecord,
     value_record::{
-        Value, ValueAppend, ValueDecrement, ValueIncrement, ValuePost, ValuePrepend, ValuePut,
-        ValueRecord, ValueResponse,
+        Value, ValueAppend, ValueDecrement, ValueIncrement, ValuePopBack, ValuePopFront, ValuePost,
+        ValuePrepend, ValuePut, ValueRecord, ValueResponse,
     },
     Result,
 };
@@ -296,10 +296,9 @@ impl Db {
         let original_value = values.get(&id).ok_or(Error::NotFound)?.clone();
 
         let value = match (original_value.value, value_append.append) {
-            (Value::Array(mut original_value), Value::Array(mut value_append)) => {
-                let mut new_value = vec![];
-                new_value.append(&mut original_value);
-                new_value.append(&mut value_append);
+            (Value::Array(original_value_vec), Value::Array(mut value_append_vec)) => {
+                let mut new_value = original_value_vec;
+                new_value.append(&mut value_append_vec);
 
                 Value::Array(new_value)
             }
@@ -347,13 +346,13 @@ impl Db {
         let original_value = values.get(&id).ok_or(Error::NotFound)?.clone();
 
         let value = match original_value.value {
-            Value::Integer(original_value) => match value_decrement.decrement {
-                None => Value::Integer(original_value.saturating_sub(1)),
+            Value::Integer(original_value_integer) => match value_decrement.decrement {
+                None => Value::Integer(original_value_integer.saturating_sub(1)),
                 Some(decrement) => {
                     if let Some(abs) = decrement.checked_abs() {
-                        Value::Integer(original_value.saturating_sub(abs))
+                        Value::Integer(original_value_integer.saturating_sub(abs))
                     } else {
-                        Value::Integer(original_value)
+                        Value::Integer(original_value_integer)
                     }
                 }
             },
@@ -440,13 +439,13 @@ impl Db {
         let original_value = values.get(&id).ok_or(Error::NotFound)?.clone();
 
         let value = match original_value.value {
-            Value::Integer(original_value) => match value_increment.increment {
-                None => Value::Integer(original_value.saturating_add(1)),
+            Value::Integer(original_value_integer) => match value_increment.increment {
+                None => Value::Integer(original_value_integer.saturating_add(1)),
                 Some(increment) => {
                     if let Some(abs) = increment.checked_abs() {
-                        Value::Integer(original_value.saturating_add(abs))
+                        Value::Integer(original_value_integer.saturating_add(abs))
                     } else {
-                        Value::Integer(original_value)
+                        Value::Integer(original_value_integer)
                     }
                 }
             },
@@ -516,6 +515,149 @@ impl Db {
         }
     }
 
+    pub fn try_pop_back(
+        &self,
+        key: &str,
+        value_pop_back: ValuePopBack,
+    ) -> Result<Option<Vec<Value>>> {
+        let mut stats = self.stats.write().unwrap();
+        stats.inc_requests();
+
+        let key_index = self.indexes.key.write().unwrap();
+        let id = *key_index.get(key).unwrap();
+
+        let mut values = self.values.write().unwrap();
+        let original_value = values.get(&id).ok_or(Error::NotFound)?.clone();
+
+        let mut return_values = vec![];
+        let value = match original_value.value {
+            Value::Array(original_value_vec) => match value_pop_back.pop_back {
+                None => {
+                    let mut new_value = original_value_vec;
+                    let pop_value = new_value.pop_back();
+                    if let Some(pop_value) = pop_value {
+                        return_values.append(&mut vec![pop_value]);
+                    }
+
+                    Value::Array(new_value)
+                }
+                Some(mut pop_back) => {
+                    if pop_back > original_value_vec.len() {
+                        pop_back = original_value_vec.len();
+                    }
+
+                    let mut new_value = original_value_vec;
+
+                    for _i in 1..=pop_back {
+                        let pop_value = new_value.pop_back();
+                        if let Some(pop_value) = pop_value {
+                            return_values.append(&mut vec![pop_value]);
+                        }
+                    }
+
+                    Value::Array(new_value)
+                }
+            },
+            _ => return Ok(None),
+        };
+
+        let now = Utc::now();
+        let value_record = ValueRecord::new(
+            id,
+            &original_value.key,
+            &value,
+            original_value.created_at,
+            original_value.delete_at,
+            now,
+        );
+        values.insert(id, value_record);
+        let result = values.get(&id).cloned();
+
+        match result {
+            None => Ok(None),
+            Some(result) => {
+                stats.inc_writes();
+
+                let mut updated_at_index = self.indexes.updated_at.write().unwrap();
+                updated_at_index.remove(&original_value.updated_at.timestamp_nanos());
+                updated_at_index.insert(result.updated_at.timestamp_nanos(), id);
+
+                Ok(Some(return_values))
+            }
+        }
+    }
+
+    pub fn try_pop_front(
+        &self,
+        key: &str,
+        value_pop_front: ValuePopFront,
+    ) -> Result<Option<Vec<Value>>> {
+        let mut stats = self.stats.write().unwrap();
+        stats.inc_requests();
+
+        let key_index = self.indexes.key.write().unwrap();
+        let id = *key_index.get(key).unwrap();
+
+        let mut values = self.values.write().unwrap();
+        let original_value = values.get(&id).ok_or(Error::NotFound)?.clone();
+
+        let mut return_values = vec![];
+        let value = match original_value.value {
+            Value::Array(original_value_vec) => match value_pop_front.pop_front {
+                None => {
+                    let mut new_value = original_value_vec;
+                    let pop_value = new_value.pop_front();
+                    if let Some(pop_value) = pop_value {
+                        return_values.append(&mut vec![pop_value]);
+                    }
+
+                    Value::Array(new_value)
+                }
+                Some(mut pop_front) => {
+                    if pop_front > original_value_vec.len() {
+                        pop_front = original_value_vec.len();
+                    }
+                    let mut new_value = original_value_vec;
+
+                    for _i in 1..=pop_front {
+                        let pop_value = new_value.pop_front();
+                        if let Some(pop_value) = pop_value {
+                            return_values.append(&mut vec![pop_value]);
+                        }
+                    }
+
+                    Value::Array(new_value)
+                }
+            },
+            _ => return Ok(None),
+        };
+
+        let now = Utc::now();
+        let value_record = ValueRecord::new(
+            id,
+            &original_value.key,
+            &value,
+            original_value.created_at,
+            original_value.delete_at,
+            now,
+        );
+        values.insert(id, value_record);
+        let result = values.get(&id).cloned();
+
+        match result {
+            None => Ok(None),
+            Some(result) => {
+                stats.inc_writes();
+
+                let mut updated_at_index = self.indexes.updated_at.write().unwrap();
+                updated_at_index.remove(&original_value.updated_at.timestamp_nanos());
+                updated_at_index.insert(result.updated_at.timestamp_nanos(), id);
+
+                Ok(Some(return_values))
+            }
+        }
+    }
+
     pub fn try_prepend(
         &self,
         key: &str,
@@ -531,10 +673,12 @@ impl Db {
         let original_value = values.get(&id).ok_or(Error::NotFound)?.clone();
 
         let value = match (original_value.value, value_prepend.prepend) {
-            (Value::Array(mut original_value), Value::Array(mut value_prepend)) => {
-                let mut new_value = vec![];
-                new_value.append(&mut value_prepend);
-                new_value.append(&mut original_value);
+            (Value::Array(original_value_vec), Value::Array(value_prepend_vec)) => {
+                let mut new_value = original_value_vec;
+
+                for value_prepend_item in value_prepend_vec {
+                    new_value.push_front(value_prepend_item);
+                }
 
                 Value::Array(new_value)
             }
