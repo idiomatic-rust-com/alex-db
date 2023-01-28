@@ -259,18 +259,16 @@ impl Db {
             }
         }
 
-        if limit.is_some() || page.is_some() {
-            let limit = limit.unwrap_or(10);
-            let page = page.unwrap_or(1);
+        let limit = limit.unwrap_or(100);
+        let page = page.unwrap_or(1);
 
-            let skip = (page - 1) * limit;
+        let skip = (page - 1) * limit;
 
-            ids = ids
-                .into_iter()
-                .skip(skip)
-                .take(limit)
-                .collect::<Vec<Uuid>>();
-        }
+        ids = ids
+            .into_iter()
+            .skip(skip)
+            .take(limit)
+            .collect::<Vec<Uuid>>();
 
         for id in ids {
             let value = values.get(&id).cloned().unwrap();
