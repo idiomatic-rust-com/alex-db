@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use std::fmt;
 
 #[derive(Debug)]
 pub enum Error {
@@ -7,8 +7,8 @@ pub enum Error {
 
 impl std::error::Error for Error {}
 
-impl Display for Error {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for Error {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         use Error::*;
         match self {
             NotFound => write!(f, "Not found."),
