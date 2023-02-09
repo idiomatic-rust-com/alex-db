@@ -18,9 +18,8 @@ mod tests {
 
     #[tokio::test]
     async fn append_200_array_array_boolean() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = false;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
@@ -67,7 +66,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .method(http::Method::PUT)
-                    .uri(format!("/values/{}/append", key))
+                    .uri(format!("/values/{key}/append"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
                         serde_json::json!({ "append": &append_value_array }).to_string(),
@@ -94,9 +93,8 @@ mod tests {
 
     #[tokio::test]
     async fn append_200_array_array_integer() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = false;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
@@ -143,7 +141,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .method(http::Method::PUT)
-                    .uri(format!("/values/{}/append", key))
+                    .uri(format!("/values/{key}/append"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
                         serde_json::json!({ "append": &append_value_array }).to_string(),
@@ -170,16 +168,15 @@ mod tests {
 
     #[tokio::test]
     async fn append_200_array_boolean() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = false;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
 
         let key = Word().fake::<String>();
         let value: bool = Faker.fake();
-        let value_array = vec![value.clone()];
+        let value_array = vec![value];
 
         let response = router
             .oneshot(
@@ -217,7 +214,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .method(http::Method::PUT)
-                    .uri(format!("/values/{}/append", key))
+                    .uri(format!("/values/{key}/append"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
                         serde_json::json!({ "append": &append_value_array }).to_string(),
@@ -244,16 +241,15 @@ mod tests {
 
     #[tokio::test]
     async fn append_200_array_boolean_and_integer() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = false;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
 
         let key = Word().fake::<String>();
         let value: bool = Faker.fake();
-        let value_array = vec![value.clone()];
+        let value_array = vec![value];
 
         let response = router
             .oneshot(
@@ -291,7 +287,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .method(http::Method::PUT)
-                    .uri(format!("/values/{}/append", key))
+                    .uri(format!("/values/{key}/append"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
                         serde_json::json!({ "append": &append_value_array }).to_string(),
@@ -318,16 +314,15 @@ mod tests {
 
     #[tokio::test]
     async fn append_200_array_integer() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = false;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
 
         let key = Word().fake::<String>();
         let value: i64 = Faker.fake();
-        let value_array = vec![value.clone()];
+        let value_array = vec![value];
 
         let response = router
             .oneshot(
@@ -365,7 +360,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .method(http::Method::PUT)
-                    .uri(format!("/values/{}/append", key))
+                    .uri(format!("/values/{key}/append"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
                         serde_json::json!({ "append": &append_value_array }).to_string(),
@@ -392,16 +387,15 @@ mod tests {
 
     #[tokio::test]
     async fn append_200_array_integer_and_string() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = false;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
 
         let key = Word().fake::<String>();
         let value: i64 = Faker.fake();
-        let value_array = vec![value.clone()];
+        let value_array = vec![value];
 
         let response = router
             .oneshot(
@@ -439,7 +433,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .method(http::Method::PUT)
-                    .uri(format!("/values/{}/append", key))
+                    .uri(format!("/values/{key}/append"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
                         serde_json::json!({ "append": &append_value_array }).to_string(),
@@ -466,9 +460,8 @@ mod tests {
 
     #[tokio::test]
     async fn append_200_array_string() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = false;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
@@ -513,7 +506,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .method(http::Method::PUT)
-                    .uri(format!("/values/{}/append", key))
+                    .uri(format!("/values/{key}/append"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
                         serde_json::json!({ "append": &append_value_array }).to_string(),
@@ -540,9 +533,8 @@ mod tests {
 
     #[tokio::test]
     async fn append_200_array_string_and_boolean() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = false;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
@@ -581,13 +573,13 @@ mod tests {
         );
 
         let append_value: bool = Faker.fake();
-        let append_value_array = vec![append_value.clone()];
+        let append_value_array = vec![append_value];
 
         let response = cloned_router
             .oneshot(
                 Request::builder()
                     .method(http::Method::PUT)
-                    .uri(format!("/values/{}/append", key))
+                    .uri(format!("/values/{key}/append"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
                         serde_json::json!({ "append": &append_value_array }).to_string(),
@@ -614,9 +606,8 @@ mod tests {
 
     #[tokio::test]
     async fn append_200_authentication() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = true;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig::default();
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
@@ -662,7 +653,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .method(http::Method::PUT)
-                    .uri(format!("/values/{}/append", key))
+                    .uri(format!("/values/{key}/append"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .header("X-Auth-Token".to_string(), app.api_key.unwrap().to_string())
                     .body(Body::from(
@@ -690,9 +681,8 @@ mod tests {
 
     #[tokio::test]
     async fn append_401() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = true;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig::default();
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
@@ -738,7 +728,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .method(http::Method::PUT)
-                    .uri(format!("/values/{}/append", key))
+                    .uri(format!("/values/{key}/append"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
                         serde_json::json!({ "append": &append_value_array }).to_string(),
@@ -753,9 +743,8 @@ mod tests {
 
     #[tokio::test]
     async fn append_404() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = false;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
 
@@ -767,7 +756,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .method(http::Method::PUT)
-                    .uri(format!("/values/{}/append", key))
+                    .uri(format!("/values/{key}/append"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
                         serde_json::json!({ "append": &append_value_array }).to_string(),
@@ -782,9 +771,8 @@ mod tests {
 
     #[tokio::test]
     async fn append_409() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = false;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
@@ -825,7 +813,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .method(http::Method::PUT)
-                    .uri(format!("/values/{}/append", key))
+                    .uri(format!("/values/{key}/append"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
                         serde_json::json!({ "append": &append_value_array }).to_string(),
@@ -840,9 +828,8 @@ mod tests {
 
     #[tokio::test]
     async fn append_422() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = false;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
@@ -886,7 +873,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .method(http::Method::PUT)
-                    .uri(format!("/values/{}/append", key))
+                    .uri(format!("/values/{key}/append"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
                         serde_json::json!({ "append": &value }).to_string(),
@@ -901,9 +888,8 @@ mod tests {
 
     #[tokio::test]
     async fn create_201_array_array_boolean() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = false;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
 
@@ -945,9 +931,8 @@ mod tests {
 
     #[tokio::test]
     async fn create_201_array_array_integer() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = false;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
 
@@ -989,9 +974,8 @@ mod tests {
 
     #[tokio::test]
     async fn create_201_array_array_string() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = false;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
 
@@ -1033,9 +1017,8 @@ mod tests {
 
     #[tokio::test]
     async fn create_201_array_boolean() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = false;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
 
@@ -1075,9 +1058,8 @@ mod tests {
 
     #[tokio::test]
     async fn create_201_array_integer() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = false;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
 
@@ -1117,9 +1099,8 @@ mod tests {
 
     #[tokio::test]
     async fn create_201_array_string() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = false;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
 
@@ -1159,9 +1140,8 @@ mod tests {
 
     #[tokio::test]
     async fn create_201_boolean() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = false;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
 
@@ -1197,9 +1177,8 @@ mod tests {
 
     #[tokio::test]
     async fn create_201_integer() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = false;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
 
@@ -1235,9 +1214,8 @@ mod tests {
 
     #[tokio::test]
     async fn create_201_string() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = false;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
 
@@ -1273,9 +1251,8 @@ mod tests {
 
     #[tokio::test]
     async fn create_201_authentication() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = true;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig::default();
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
 
@@ -1312,9 +1289,8 @@ mod tests {
 
     #[tokio::test]
     async fn create_401() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = true;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig::default();
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
 
@@ -1344,9 +1320,8 @@ mod tests {
 
     #[tokio::test]
     async fn create_409() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = false;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
@@ -1405,9 +1380,8 @@ mod tests {
 
     #[tokio::test]
     async fn create_422() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = false;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
 
@@ -1437,9 +1411,8 @@ mod tests {
 
     #[tokio::test]
     async fn decrement_200() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = false;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
@@ -1479,7 +1452,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .method(http::Method::PUT)
-                    .uri(format!("/values/{}/decrement", key))
+                    .uri(format!("/values/{key}/decrement"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
                         serde_json::json!({ "decrement": &decrement_value }).to_string(),
@@ -1500,9 +1473,8 @@ mod tests {
 
     #[tokio::test]
     async fn decrement_200_max() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = false;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
@@ -1542,7 +1514,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .method(http::Method::PUT)
-                    .uri(format!("/values/{}/decrement", key))
+                    .uri(format!("/values/{key}/decrement"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
                         serde_json::json!({ "decrement": &decrement_value }).to_string(),
@@ -1563,9 +1535,8 @@ mod tests {
 
     #[tokio::test]
     async fn decrement_200_min() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = false;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
@@ -1605,7 +1576,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .method(http::Method::PUT)
-                    .uri(format!("/values/{}/decrement", key))
+                    .uri(format!("/values/{key}/decrement"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
                         serde_json::json!({ "decrement": &decrement_value }).to_string(),
@@ -1626,9 +1597,8 @@ mod tests {
 
     #[tokio::test]
     async fn decrement_200_min_plus_1() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = false;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
@@ -1668,7 +1638,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .method(http::Method::PUT)
-                    .uri(format!("/values/{}/decrement", key))
+                    .uri(format!("/values/{key}/decrement"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
                         serde_json::json!({ "decrement": &decrement_value }).to_string(),
@@ -1689,9 +1659,8 @@ mod tests {
 
     #[tokio::test]
     async fn decrement_200_authentication() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = true;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig::default();
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
@@ -1732,7 +1701,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .method(http::Method::PUT)
-                    .uri(format!("/values/{}/decrement", key))
+                    .uri(format!("/values/{key}/decrement"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .header("X-Auth-Token".to_string(), app.api_key.unwrap().to_string())
                     .body(Body::from(
@@ -1754,9 +1723,8 @@ mod tests {
 
     #[tokio::test]
     async fn decrement_200_no_decrement_value() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = false;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
@@ -1794,7 +1762,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .method(http::Method::PUT)
-                    .uri(format!("/values/{}/decrement", key))
+                    .uri(format!("/values/{key}/decrement"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(serde_json::json!({}).to_string()))
                     .unwrap(),
@@ -1813,9 +1781,8 @@ mod tests {
 
     #[tokio::test]
     async fn decrement_401() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = true;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig::default();
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
@@ -1856,7 +1823,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .method(http::Method::PUT)
-                    .uri(format!("/values/{}/decrement", key))
+                    .uri(format!("/values/{key}/decrement"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
                         serde_json::json!({ "decrement": &decrement_value }).to_string(),
@@ -1871,9 +1838,8 @@ mod tests {
 
     #[tokio::test]
     async fn decrement_404() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = false;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
 
@@ -1884,7 +1850,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .method(http::Method::PUT)
-                    .uri(format!("/values/{}/decrement", key))
+                    .uri(format!("/values/{key}/decrement"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
                         serde_json::json!({ "decrement": &decrement_value }).to_string(),
@@ -1899,9 +1865,8 @@ mod tests {
 
     #[tokio::test]
     async fn decrement_409() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = false;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
@@ -1941,7 +1906,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .method(http::Method::PUT)
-                    .uri(format!("/values/{}/decrement", key))
+                    .uri(format!("/values/{key}/decrement"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
                         serde_json::json!({ "decrement": &decrement_value }).to_string(),
@@ -1956,9 +1921,8 @@ mod tests {
 
     #[tokio::test]
     async fn decrement_422() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = false;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
@@ -1996,7 +1960,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .method(http::Method::PUT)
-                    .uri(format!("/values/{}/decrement", key))
+                    .uri(format!("/values/{key}/decrement"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
                         serde_json::json!({
@@ -2014,9 +1978,8 @@ mod tests {
 
     #[tokio::test]
     async fn delete_204() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = false;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
@@ -2054,7 +2017,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .method(http::Method::DELETE)
-                    .uri(format!("/values/{}", key))
+                    .uri(format!("/values/{key}"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::empty())
                     .unwrap(),
@@ -2067,9 +2030,8 @@ mod tests {
 
     #[tokio::test]
     async fn delete_204_authentication() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = true;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig::default();
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
@@ -2108,7 +2070,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .method(http::Method::DELETE)
-                    .uri(format!("/values/{}", key))
+                    .uri(format!("/values/{key}"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .header("X-Auth-Token".to_string(), app.api_key.unwrap().to_string())
                     .body(Body::empty())
@@ -2122,9 +2084,8 @@ mod tests {
 
     #[tokio::test]
     async fn delete_401() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = true;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig::default();
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
@@ -2163,7 +2124,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .method(http::Method::DELETE)
-                    .uri(format!("/values/{}", key))
+                    .uri(format!("/values/{key}"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::empty())
                     .unwrap(),
@@ -2176,9 +2137,8 @@ mod tests {
 
     #[tokio::test]
     async fn delete_404() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = false;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
@@ -2217,7 +2177,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .method(http::Method::DELETE)
-                    .uri(format!("/values/{}", key))
+                    .uri(format!("/values/{key}"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::empty())
                     .unwrap(),
@@ -2231,7 +2191,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .method(http::Method::DELETE)
-                    .uri(format!("/values/{}", key))
+                    .uri(format!("/values/{key}"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::empty())
                     .unwrap(),
@@ -2244,9 +2204,8 @@ mod tests {
 
     #[tokio::test]
     async fn increment_200() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = false;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
@@ -2286,7 +2245,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .method(http::Method::PUT)
-                    .uri(format!("/values/{}/increment", key))
+                    .uri(format!("/values/{key}/increment"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
                         serde_json::json!({ "increment": &increment_value }).to_string(),
@@ -2307,9 +2266,8 @@ mod tests {
 
     #[tokio::test]
     async fn increment_200_max() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = false;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
@@ -2349,7 +2307,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .method(http::Method::PUT)
-                    .uri(format!("/values/{}/increment", key))
+                    .uri(format!("/values/{key}/increment"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
                         serde_json::json!({ "increment": &increment_value }).to_string(),
@@ -2370,9 +2328,8 @@ mod tests {
 
     #[tokio::test]
     async fn increment_200_min() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = false;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
@@ -2412,7 +2369,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .method(http::Method::PUT)
-                    .uri(format!("/values/{}/increment", key))
+                    .uri(format!("/values/{key}/increment"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
                         serde_json::json!({ "increment": &increment_value }).to_string(),
@@ -2433,9 +2390,8 @@ mod tests {
 
     #[tokio::test]
     async fn increment_200_min_plus1() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = false;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
@@ -2475,7 +2431,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .method(http::Method::PUT)
-                    .uri(format!("/values/{}/increment", key))
+                    .uri(format!("/values/{key}/increment"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
                         serde_json::json!({ "increment": &increment_value }).to_string(),
@@ -2496,9 +2452,8 @@ mod tests {
 
     #[tokio::test]
     async fn increment_200_authentication() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = true;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig::default();
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
@@ -2539,7 +2494,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .method(http::Method::PUT)
-                    .uri(format!("/values/{}/increment", key))
+                    .uri(format!("/values/{key}/increment"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .header("X-Auth-Token".to_string(), app.api_key.unwrap().to_string())
                     .body(Body::from(
@@ -2561,9 +2516,8 @@ mod tests {
 
     #[tokio::test]
     async fn increment_200_no_increment_value() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = false;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
@@ -2601,7 +2555,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .method(http::Method::PUT)
-                    .uri(format!("/values/{}/increment", key))
+                    .uri(format!("/values/{key}/increment"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(serde_json::json!({}).to_string()))
                     .unwrap(),
@@ -2620,9 +2574,8 @@ mod tests {
 
     #[tokio::test]
     async fn increment_401() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = true;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig::default();
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
@@ -2663,7 +2616,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .method(http::Method::PUT)
-                    .uri(format!("/values/{}/increment", key))
+                    .uri(format!("/values/{key}/increment"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
                         serde_json::json!({ "increment": &increment_value }).to_string(),
@@ -2678,9 +2631,8 @@ mod tests {
 
     #[tokio::test]
     async fn increment_404() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = false;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
 
@@ -2691,7 +2643,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .method(http::Method::PUT)
-                    .uri(format!("/values/{}/increment", key))
+                    .uri(format!("/values/{key}/increment"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
                         serde_json::json!({ "increment": &increment_value }).to_string(),
@@ -2706,9 +2658,8 @@ mod tests {
 
     #[tokio::test]
     async fn increment_409() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = false;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
@@ -2748,7 +2699,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .method(http::Method::PUT)
-                    .uri(format!("/values/{}/increment", key))
+                    .uri(format!("/values/{key}/increment"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
                         serde_json::json!({ "increment": &increment_value }).to_string(),
@@ -2763,9 +2714,8 @@ mod tests {
 
     #[tokio::test]
     async fn increment_422() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = false;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
@@ -2803,7 +2753,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .method(http::Method::PUT)
-                    .uri(format!("/values/{}/increment", key))
+                    .uri(format!("/values/{key}/increment"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
                         serde_json::json!({
@@ -2821,9 +2771,8 @@ mod tests {
 
     #[tokio::test]
     async fn list_one_200() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = false;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
@@ -2879,9 +2828,8 @@ mod tests {
 
     #[tokio::test]
     async fn list_two_200() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = false;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
@@ -2967,9 +2915,8 @@ mod tests {
 
     #[tokio::test]
     async fn list_empty_200() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = false;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
 
@@ -2995,9 +2942,8 @@ mod tests {
 
     #[tokio::test]
     async fn list_empty_200_authentication() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = true;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig::default();
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
 
@@ -3024,9 +2970,8 @@ mod tests {
 
     #[tokio::test]
     async fn list_empty_401() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = true;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig::default();
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
 
@@ -3047,9 +2992,8 @@ mod tests {
 
     #[tokio::test]
     async fn pop_back_200_array_boolean() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = false;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
@@ -3097,7 +3041,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .method(http::Method::PUT)
-                    .uri(format!("/values/{}/pop-back", key))
+                    .uri(format!("/values/{key}/pop-back"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
                         serde_json::json!({ "pop_back": &pop_back_value }).to_string(),
@@ -3117,9 +3061,8 @@ mod tests {
 
     #[tokio::test]
     async fn pop_back_200_array_boolean_more() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = false;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
@@ -3169,7 +3112,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .method(http::Method::PUT)
-                    .uri(format!("/values/{}/pop-back", key))
+                    .uri(format!("/values/{key}/pop-back"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
                         serde_json::json!({ "pop_back": &pop_back_value }).to_string(),
@@ -3189,9 +3132,8 @@ mod tests {
 
     #[tokio::test]
     async fn pop_back_200_array_integer() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = false;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
@@ -3237,7 +3179,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .method(http::Method::PUT)
-                    .uri(format!("/values/{}/pop-back", key))
+                    .uri(format!("/values/{key}/pop-back"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(serde_json::json!({}).to_string()))
                     .unwrap(),
@@ -3255,9 +3197,8 @@ mod tests {
 
     #[tokio::test]
     async fn pop_back_200_array_integer_more() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = false;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
@@ -3309,7 +3250,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .method(http::Method::PUT)
-                    .uri(format!("/values/{}/pop-back", key))
+                    .uri(format!("/values/{key}/pop-back"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
                         serde_json::json!({ "pop_back": &pop_back_value }).to_string(),
@@ -3336,9 +3277,8 @@ mod tests {
 
     #[tokio::test]
     async fn pop_back_200_array_string() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = false;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
@@ -3386,7 +3326,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .method(http::Method::PUT)
-                    .uri(format!("/values/{}/pop-back", key))
+                    .uri(format!("/values/{key}/pop-back"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
                         serde_json::json!({ "pop_back": &pop_back_value }).to_string(),
@@ -3406,9 +3346,8 @@ mod tests {
 
     #[tokio::test]
     async fn pop_back_200_authentication() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = true;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig::default();
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
@@ -3457,7 +3396,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .method(http::Method::PUT)
-                    .uri(format!("/values/{}/pop-back", key))
+                    .uri(format!("/values/{key}/pop-back"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .header("X-Auth-Token".to_string(), app.api_key.unwrap().to_string())
                     .body(Body::from(
@@ -3478,9 +3417,8 @@ mod tests {
 
     #[tokio::test]
     async fn pop_back_401() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = true;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig::default();
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
@@ -3529,7 +3467,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .method(http::Method::PUT)
-                    .uri(format!("/values/{}/pop-back", key))
+                    .uri(format!("/values/{key}/pop-back"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
                         serde_json::json!({ "pop_back": &pop_back_value }).to_string(),
@@ -3544,9 +3482,8 @@ mod tests {
 
     #[tokio::test]
     async fn pop_back_404() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = false;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
 
@@ -3557,7 +3494,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .method(http::Method::PUT)
-                    .uri(format!("/values/{}/pop-back", key))
+                    .uri(format!("/values/{key}/pop-back"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
                         serde_json::json!({ "pop_back": &pop_back_value }).to_string(),
@@ -3572,9 +3509,8 @@ mod tests {
 
     #[tokio::test]
     async fn pop_back_409() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = false;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
@@ -3614,7 +3550,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .method(http::Method::PUT)
-                    .uri(format!("/values/{}/pop-back", key))
+                    .uri(format!("/values/{key}/pop-back"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
                         serde_json::json!({ "pop_back": &pop_back_value }).to_string(),
@@ -3629,9 +3565,8 @@ mod tests {
 
     #[tokio::test]
     async fn pop_back_422() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = false;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
@@ -3675,7 +3610,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .method(http::Method::PUT)
-                    .uri(format!("/values/{}/pop-back", key))
+                    .uri(format!("/values/{key}/pop-back"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
                         serde_json::json!({ "pop_back": &value }).to_string(),
@@ -3690,9 +3625,8 @@ mod tests {
 
     #[tokio::test]
     async fn pop_front_200_array_boolean() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = false;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
@@ -3740,7 +3674,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .method(http::Method::PUT)
-                    .uri(format!("/values/{}/pop-front", key))
+                    .uri(format!("/values/{key}/pop-front"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
                         serde_json::json!({ "pop_front": &pop_front_value }).to_string(),
@@ -3760,9 +3694,8 @@ mod tests {
 
     #[tokio::test]
     async fn pop_front_200_array_boolean_more() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = false;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
@@ -3812,7 +3745,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .method(http::Method::PUT)
-                    .uri(format!("/values/{}/pop-front", key))
+                    .uri(format!("/values/{key}/pop-front"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
                         serde_json::json!({ "pop_front": &pop_front_value }).to_string(),
@@ -3832,9 +3765,8 @@ mod tests {
 
     #[tokio::test]
     async fn pop_front_200_array_integer() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = false;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
@@ -3880,7 +3812,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .method(http::Method::PUT)
-                    .uri(format!("/values/{}/pop-front", key))
+                    .uri(format!("/values/{key}/pop-front"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(serde_json::json!({}).to_string()))
                     .unwrap(),
@@ -3898,9 +3830,8 @@ mod tests {
 
     #[tokio::test]
     async fn pop_front_200_array_integer_more() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = false;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
@@ -3952,7 +3883,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .method(http::Method::PUT)
-                    .uri(format!("/values/{}/pop-front", key))
+                    .uri(format!("/values/{key}/pop-front"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
                         serde_json::json!({ "pop_front": &pop_front_value }).to_string(),
@@ -3979,9 +3910,8 @@ mod tests {
 
     #[tokio::test]
     async fn pop_front_200_array_string() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = false;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
@@ -4029,7 +3959,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .method(http::Method::PUT)
-                    .uri(format!("/values/{}/pop-front", key))
+                    .uri(format!("/values/{key}/pop-front"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
                         serde_json::json!({ "pop_front": &pop_front_value }).to_string(),
@@ -4049,9 +3979,8 @@ mod tests {
 
     #[tokio::test]
     async fn pop_front_200_authentication() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = true;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig::default();
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
@@ -4100,7 +4029,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .method(http::Method::PUT)
-                    .uri(format!("/values/{}/pop-front", key))
+                    .uri(format!("/values/{key}/pop-front"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .header("X-Auth-Token".to_string(), app.api_key.unwrap().to_string())
                     .body(Body::from(
@@ -4121,9 +4050,8 @@ mod tests {
 
     #[tokio::test]
     async fn pop_front_401() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = true;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig::default();
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
@@ -4172,7 +4100,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .method(http::Method::PUT)
-                    .uri(format!("/values/{}/pop-front", key))
+                    .uri(format!("/values/{key}/pop-front"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
                         serde_json::json!({ "pop_front": &pop_front_value }).to_string(),
@@ -4187,9 +4115,8 @@ mod tests {
 
     #[tokio::test]
     async fn pop_front_404() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = false;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
 
@@ -4200,7 +4127,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .method(http::Method::PUT)
-                    .uri(format!("/values/{}/pop-front", key))
+                    .uri(format!("/values/{key}/pop-front"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
                         serde_json::json!({ "pop_front": &pop_front_value }).to_string(),
@@ -4215,9 +4142,8 @@ mod tests {
 
     #[tokio::test]
     async fn pop_front_409() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = false;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
@@ -4257,7 +4183,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .method(http::Method::PUT)
-                    .uri(format!("/values/{}/pop-front", key))
+                    .uri(format!("/values/{key}/pop-front"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
                         serde_json::json!({ "pop_front": &pop_front_value }).to_string(),
@@ -4272,9 +4198,8 @@ mod tests {
 
     #[tokio::test]
     async fn pop_front_422() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = false;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
@@ -4318,7 +4243,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .method(http::Method::PUT)
-                    .uri(format!("/values/{}/pop-front", key))
+                    .uri(format!("/values/{key}/pop-front"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
                         serde_json::json!({ "pop_front": &value }).to_string(),
@@ -4333,9 +4258,8 @@ mod tests {
 
     #[tokio::test]
     async fn prepend_200_array_array_boolean() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = false;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
@@ -4382,7 +4306,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .method(http::Method::PUT)
-                    .uri(format!("/values/{}/prepend", key))
+                    .uri(format!("/values/{key}/prepend"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
                         serde_json::json!({ "prepend": &prepend_value_array }).to_string(),
@@ -4409,9 +4333,8 @@ mod tests {
 
     #[tokio::test]
     async fn prepend_200_array_array_integer() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = false;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
@@ -4458,7 +4381,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .method(http::Method::PUT)
-                    .uri(format!("/values/{}/prepend", key))
+                    .uri(format!("/values/{key}/prepend"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
                         serde_json::json!({ "prepend": &prepend_value_array }).to_string(),
@@ -4485,16 +4408,15 @@ mod tests {
 
     #[tokio::test]
     async fn prepend_200_array_boolean() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = false;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
 
         let key = Word().fake::<String>();
         let value: bool = Faker.fake();
-        let value_array = vec![value.clone()];
+        let value_array = vec![value];
 
         let response = router
             .oneshot(
@@ -4532,7 +4454,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .method(http::Method::PUT)
-                    .uri(format!("/values/{}/prepend", key))
+                    .uri(format!("/values/{key}/prepend"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
                         serde_json::json!({ "prepend": &prepend_value_array }).to_string(),
@@ -4559,16 +4481,15 @@ mod tests {
 
     #[tokio::test]
     async fn prepend_200_array_boolean_and_integer() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = false;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
 
         let key = Word().fake::<String>();
         let value: bool = Faker.fake();
-        let value_array = vec![value.clone()];
+        let value_array = vec![value];
 
         let response = router
             .oneshot(
@@ -4606,7 +4527,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .method(http::Method::PUT)
-                    .uri(format!("/values/{}/prepend", key))
+                    .uri(format!("/values/{key}/prepend"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
                         serde_json::json!({ "prepend": &prepend_value_array }).to_string(),
@@ -4633,16 +4554,15 @@ mod tests {
 
     #[tokio::test]
     async fn prepend_200_array_integer() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = false;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
 
         let key = Word().fake::<String>();
         let value: i64 = Faker.fake();
-        let value_array = vec![value.clone()];
+        let value_array = vec![value];
 
         let response = router
             .oneshot(
@@ -4680,7 +4600,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .method(http::Method::PUT)
-                    .uri(format!("/values/{}/prepend", key))
+                    .uri(format!("/values/{key}/prepend"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
                         serde_json::json!({ "prepend": &prepend_value_array }).to_string(),
@@ -4707,16 +4627,15 @@ mod tests {
 
     #[tokio::test]
     async fn prepend_200_array_integer_and_string() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = false;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
 
         let key = Word().fake::<String>();
         let value: i64 = Faker.fake();
-        let value_array = vec![value.clone()];
+        let value_array = vec![value];
 
         let response = router
             .oneshot(
@@ -4754,7 +4673,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .method(http::Method::PUT)
-                    .uri(format!("/values/{}/prepend", key))
+                    .uri(format!("/values/{key}/prepend"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
                         serde_json::json!({ "prepend": &prepend_value_array }).to_string(),
@@ -4781,9 +4700,8 @@ mod tests {
 
     #[tokio::test]
     async fn prepend_200_array_string() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = false;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
@@ -4828,7 +4746,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .method(http::Method::PUT)
-                    .uri(format!("/values/{}/prepend", key))
+                    .uri(format!("/values/{key}/prepend"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
                         serde_json::json!({ "prepend": &prepend_value_array }).to_string(),
@@ -4855,9 +4773,8 @@ mod tests {
 
     #[tokio::test]
     async fn prepend_200_array_string_and_boolean() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = false;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
@@ -4896,13 +4813,13 @@ mod tests {
         );
 
         let prepend_value: bool = Faker.fake();
-        let prepend_value_array = vec![prepend_value.clone()];
+        let prepend_value_array = vec![prepend_value];
 
         let response = cloned_router
             .oneshot(
                 Request::builder()
                     .method(http::Method::PUT)
-                    .uri(format!("/values/{}/prepend", key))
+                    .uri(format!("/values/{key}/prepend"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
                         serde_json::json!({ "prepend": &prepend_value_array }).to_string(),
@@ -4929,9 +4846,8 @@ mod tests {
 
     #[tokio::test]
     async fn prepend_200_authentication() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = true;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig::default();
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
@@ -4977,7 +4893,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .method(http::Method::PUT)
-                    .uri(format!("/values/{}/prepend", key))
+                    .uri(format!("/values/{key}/prepend"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .header("X-Auth-Token".to_string(), app.api_key.unwrap().to_string())
                     .body(Body::from(
@@ -5005,9 +4921,8 @@ mod tests {
 
     #[tokio::test]
     async fn prepend_401() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = true;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig::default();
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
@@ -5053,7 +4968,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .method(http::Method::PUT)
-                    .uri(format!("/values/{}/prepend", key))
+                    .uri(format!("/values/{key}/prepend"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
                         serde_json::json!({ "prepend": &prepend_value_array }).to_string(),
@@ -5068,9 +4983,8 @@ mod tests {
 
     #[tokio::test]
     async fn prepend_404() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = false;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
 
@@ -5082,7 +4996,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .method(http::Method::PUT)
-                    .uri(format!("/values/{}/prepend", key))
+                    .uri(format!("/values/{key}/prepend"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
                         serde_json::json!({ "prepend": &prepend_value_array }).to_string(),
@@ -5097,9 +5011,8 @@ mod tests {
 
     #[tokio::test]
     async fn prepend_409() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = false;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
@@ -5140,7 +5053,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .method(http::Method::PUT)
-                    .uri(format!("/values/{}/prepend", key))
+                    .uri(format!("/values/{key}/prepend"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
                         serde_json::json!({ "prepend": &prepend_value_array }).to_string(),
@@ -5155,9 +5068,8 @@ mod tests {
 
     #[tokio::test]
     async fn prepend_422() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = false;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
@@ -5201,7 +5113,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .method(http::Method::PUT)
-                    .uri(format!("/values/{}/prepend", key))
+                    .uri(format!("/values/{key}/prepend"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
                         serde_json::json!({ "prepend": &value }).to_string(),
@@ -5216,9 +5128,8 @@ mod tests {
 
     #[tokio::test]
     async fn read_200() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = false;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
@@ -5256,7 +5167,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .method(http::Method::GET)
-                    .uri(format!("/values/{}", key))
+                    .uri(format!("/values/{key}"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::empty())
                     .unwrap(),
@@ -5275,9 +5186,8 @@ mod tests {
 
     #[tokio::test]
     async fn read_200_authentication() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = true;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig::default();
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
@@ -5316,7 +5226,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .method(http::Method::GET)
-                    .uri(format!("/values/{}", key))
+                    .uri(format!("/values/{key}"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .header("X-Auth-Token".to_string(), app.api_key.unwrap().to_string())
                     .body(Body::empty())
@@ -5336,9 +5246,8 @@ mod tests {
 
     #[tokio::test]
     async fn read_401() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = true;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig::default();
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
@@ -5377,7 +5286,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .method(http::Method::GET)
-                    .uri(format!("/values/{}", key))
+                    .uri(format!("/values/{key}"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::empty())
                     .unwrap(),
@@ -5390,9 +5299,8 @@ mod tests {
 
     #[tokio::test]
     async fn read_404() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = false;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
 
@@ -5402,7 +5310,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .method(http::Method::GET)
-                    .uri(format!("/values/{}", key))
+                    .uri(format!("/values/{key}"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::empty())
                     .unwrap(),
@@ -5415,9 +5323,8 @@ mod tests {
 
     #[tokio::test]
     async fn update_200_array_array_boolean() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = false;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
@@ -5464,7 +5371,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .method(http::Method::PUT)
-                    .uri(format!("/values/{}", key))
+                    .uri(format!("/values/{key}"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
                         serde_json::json!({
@@ -5494,9 +5401,8 @@ mod tests {
 
     #[tokio::test]
     async fn update_200_array_array_integer() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = false;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
@@ -5543,7 +5449,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .method(http::Method::PUT)
-                    .uri(format!("/values/{}", key))
+                    .uri(format!("/values/{key}"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
                         serde_json::json!({
@@ -5573,9 +5479,8 @@ mod tests {
 
     #[tokio::test]
     async fn update_200_array_array_string() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = false;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
@@ -5622,7 +5527,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .method(http::Method::PUT)
-                    .uri(format!("/values/{}", key))
+                    .uri(format!("/values/{key}"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
                         serde_json::json!({
@@ -5652,9 +5557,8 @@ mod tests {
 
     #[tokio::test]
     async fn update_200_array_boolean() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = false;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
@@ -5699,7 +5603,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .method(http::Method::PUT)
-                    .uri(format!("/values/{}", key))
+                    .uri(format!("/values/{key}"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
                         serde_json::json!({
@@ -5727,9 +5631,8 @@ mod tests {
 
     #[tokio::test]
     async fn update_200_array_integer() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = false;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
@@ -5774,7 +5677,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .method(http::Method::PUT)
-                    .uri(format!("/values/{}", key))
+                    .uri(format!("/values/{key}"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
                         serde_json::json!({
@@ -5802,9 +5705,8 @@ mod tests {
 
     #[tokio::test]
     async fn update_200_array_string() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = false;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
@@ -5849,7 +5751,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .method(http::Method::PUT)
-                    .uri(format!("/values/{}", key))
+                    .uri(format!("/values/{key}"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
                         serde_json::json!({
@@ -5877,9 +5779,8 @@ mod tests {
 
     #[tokio::test]
     async fn update_200_boolean() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = false;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
@@ -5919,7 +5820,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .method(http::Method::PUT)
-                    .uri(format!("/values/{}", key))
+                    .uri(format!("/values/{key}"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
                         serde_json::json!({
@@ -5944,9 +5845,8 @@ mod tests {
 
     #[tokio::test]
     async fn update_200_boolean_to_integer() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = false;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
@@ -5986,7 +5886,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .method(http::Method::PUT)
-                    .uri(format!("/values/{}", key))
+                    .uri(format!("/values/{key}"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
                         serde_json::json!({
@@ -6011,9 +5911,8 @@ mod tests {
 
     #[tokio::test]
     async fn update_200_integer() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = false;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
@@ -6053,7 +5952,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .method(http::Method::PUT)
-                    .uri(format!("/values/{}", key))
+                    .uri(format!("/values/{key}"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
                         serde_json::json!({
@@ -6078,9 +5977,8 @@ mod tests {
 
     #[tokio::test]
     async fn update_200_integer_to_boolean() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = false;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
@@ -6120,7 +6018,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .method(http::Method::PUT)
-                    .uri(format!("/values/{}", key))
+                    .uri(format!("/values/{key}"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
                         serde_json::json!({
@@ -6145,9 +6043,8 @@ mod tests {
 
     #[tokio::test]
     async fn update_200_string() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = false;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
@@ -6187,7 +6084,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .method(http::Method::PUT)
-                    .uri(format!("/values/{}", key))
+                    .uri(format!("/values/{key}"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
                         serde_json::json!({
@@ -6212,9 +6109,8 @@ mod tests {
 
     #[tokio::test]
     async fn update_200_string_to_boolean() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = false;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
@@ -6254,7 +6150,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .method(http::Method::PUT)
-                    .uri(format!("/values/{}", key))
+                    .uri(format!("/values/{key}"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
                         serde_json::json!({
@@ -6279,9 +6175,8 @@ mod tests {
 
     #[tokio::test]
     async fn update_200_authentication() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = true;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig::default();
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
@@ -6322,7 +6217,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .method(http::Method::PUT)
-                    .uri(format!("/values/{}", key))
+                    .uri(format!("/values/{key}"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .header("X-Auth-Token".to_string(), app.api_key.unwrap().to_string())
                     .body(Body::from(
@@ -6348,9 +6243,8 @@ mod tests {
 
     #[tokio::test]
     async fn update_401() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = true;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig::default();
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
@@ -6391,7 +6285,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .method(http::Method::PUT)
-                    .uri(format!("/values/{}", key))
+                    .uri(format!("/values/{key}"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
                         serde_json::json!({
@@ -6410,9 +6304,8 @@ mod tests {
 
     #[tokio::test]
     async fn update_404() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = false;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
 
@@ -6423,7 +6316,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .method(http::Method::PUT)
-                    .uri(format!("/values/{}", key))
+                    .uri(format!("/values/{key}"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
                         serde_json::json!({
@@ -6442,9 +6335,8 @@ mod tests {
 
     #[tokio::test]
     async fn update_409() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = false;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
@@ -6484,7 +6376,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .method(http::Method::PUT)
-                    .uri(format!("/values/{}", key))
+                    .uri(format!("/values/{key}"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
                         serde_json::json!({
@@ -6503,9 +6395,8 @@ mod tests {
 
     #[tokio::test]
     async fn update_422() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = false;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
         let cloned_router = router.clone();
@@ -6545,7 +6436,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .method(http::Method::PUT)
-                    .uri(format!("/values/{}", key))
+                    .uri(format!("/values/{key}"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
                         serde_json::json!({

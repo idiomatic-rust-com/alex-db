@@ -93,6 +93,34 @@ and you will receive the result
 [{"key":"test1-key","value":"test1-value"},{"key":"test2-key","value":true}]
 ```
 
+There are additional parameters that you can use for sorting and paginating.
+
+- direction:
+  - asc
+  - desc
+- sort:
+  - created_at
+  - delete_at
+  - key
+  - updated_at
+- page - page number
+- limit - limit of items per page
+
+Execute the command
+
+```sh
+curl --location --request GET 'http://localhost:10240/values?sort=created_at&direction=asc&page=1&limit=1' \
+--header 'Content-Type: application/json' \
+--header 'X-Auth-Token: 63545360-301e-482f-93fc-84e6d11d8aee' \
+--data-raw ''
+```
+
+and you will receive the result
+
+```sh
+[{"key":"test1-key","value":"test1-value"}]
+```
+
 ### Read
 
 Execute the commands

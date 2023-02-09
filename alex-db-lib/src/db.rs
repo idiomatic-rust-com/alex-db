@@ -225,6 +225,22 @@ impl Db {
                     }
                 }
             }
+            Sort::DeleteAt => {
+                let delete_at_index = self.indexes.delete_at.read().unwrap();
+
+                match direction {
+                    Direction::Asc => {
+                        for (_key, value) in delete_at_index.iter() {
+                            ids.append(&mut vec![*value]);
+                        }
+                    }
+                    Direction::Desc => {
+                        for (_key, value) in delete_at_index.iter().rev() {
+                            ids.append(&mut vec![*value]);
+                        }
+                    }
+                }
+            }
             Sort::Key => {
                 let key_index = self.indexes.key.read().unwrap();
 
@@ -794,6 +810,7 @@ pub enum Direction {
 #[serde(rename_all = "snake_case")]
 pub enum Sort {
     CreatedAt,
+    DeleteAt,
     Key,
     UpdatedAt,
 }

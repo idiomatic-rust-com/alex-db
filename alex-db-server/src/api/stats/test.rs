@@ -10,9 +10,8 @@ mod tests {
 
     #[tokio::test]
     async fn list_200() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = false;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
 
@@ -41,9 +40,8 @@ mod tests {
 
     #[tokio::test]
     async fn list_200_authentication() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = true;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig::default();
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
 
@@ -73,9 +71,8 @@ mod tests {
 
     #[tokio::test]
     async fn list_401() {
-        let mut db_config = DbConfig::default();
-        db_config.enable_security_api_keys = true;
-        let config = Config::new(db_config, 8080);
+        let db_config = DbConfig::default();
+        let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
 

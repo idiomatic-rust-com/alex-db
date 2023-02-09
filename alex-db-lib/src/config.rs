@@ -32,6 +32,6 @@ impl Config {
 
 impl Default for Config {
     fn default() -> Self {
-        Config::new(None, false, 60000, 8, 1000, 10000)
+        Config::new(None, true, 60000, 8, 1000, 10000)
     }
 }
