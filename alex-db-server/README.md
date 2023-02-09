@@ -38,8 +38,7 @@ Execute the command
 ```sh
 curl --location --request GET 'http://localhost:10240/stats' \
 --header 'Content-Type: application/json' \
---header 'X-Auth-Token: 63545360-301e-482f-93fc-84e6d11d8aee' \
---data-raw ''
+--header 'X-Auth-Token: 63545360-301e-482f-93fc-84e6d11d8aee'
 ```
 
 and you will receive the result
@@ -83,8 +82,7 @@ curl --location --request POST 'http://localhost:10240/values' \
 
 curl --location --request GET 'http://localhost:10240/values' \
 --header 'Content-Type: application/json' \
---header 'X-Auth-Token: 63545360-301e-482f-93fc-84e6d11d8aee' \
---data-raw ''
+--header 'X-Auth-Token: 63545360-301e-482f-93fc-84e6d11d8aee'
 ```
 
 and you will receive the result
@@ -111,8 +109,7 @@ Execute the command
 ```sh
 curl --location --request GET 'http://localhost:10240/values?sort=created_at&direction=asc&page=1&limit=1' \
 --header 'Content-Type: application/json' \
---header 'X-Auth-Token: 63545360-301e-482f-93fc-84e6d11d8aee' \
---data-raw ''
+--header 'X-Auth-Token: 63545360-301e-482f-93fc-84e6d11d8aee'
 ```
 
 and you will receive the result
@@ -136,8 +133,7 @@ curl --location --request POST 'http://localhost:10240/values' \
 
 curl --location --request GET 'http://localhost:10240/values/test3-key' \
 --header 'Content-Type: application/json' \
---header 'X-Auth-Token: 63545360-301e-482f-93fc-84e6d11d8aee' \
---data-raw ''
+--header 'X-Auth-Token: 63545360-301e-482f-93fc-84e6d11d8aee'
 ```
 
 and you will receive the result
@@ -189,8 +185,7 @@ curl --location --request POST 'http://localhost:10240/values' \
 
 curl --location --request DELETE 'http://localhost:10240/values/test5-key' \
 --header 'Content-Type: application/json' \
---header 'X-Auth-Token: 63545360-301e-482f-93fc-84e6d11d8aee' \
---data-raw ''
+--header 'X-Auth-Token: 63545360-301e-482f-93fc-84e6d11d8aee'
 ```
 
 ### Append
@@ -374,3 +369,106 @@ and you will receive the result
 ```sh
 [["test11-b-value1","test11-b-value2","test11-b-value3"],["test11-a-value1","test11-a-value2","test11-a-value3"],12]
 ```
+
+## Performance
+
+Presently, the server displays satisfactory performance on its API endpoints.
+
+Execute the command
+
+```sh
+curl --location --request GET 'http://localhost:10240/values/test3-key' \
+--header 'Content-Type: application/json' \
+--header 'X-Auth-Token: 63545360-301e-482f-93fc-84e6d11d8aee' \
+-w ' Total: %{time_total}s\n'
+```
+
+and you will receive the result
+
+```sh
+{"key":"test3-key","value":10} Total: 0.001278s
+```
+
+and
+
+```sh
+{"key":"test3-key","value":10} Total: 0.000617s
+```
+
+when you run project in release mode
+
+```sh
+cargo run --release
+```
+
+The response time for the API endpoint has been found to be slightly above 1ms in the development mode and below 1ms in the production mode, based on our evaluation on an Ubuntu 22.04 system hosted on VirtualBox.
+
+Execute the command
+
+```sh
+ab -c 16 -n 100000 -H "X-Auth-Token: 63545360-301e-482f-93fc-84e6d11d8aee" http://localhost:10240/values/test3-key
+```
+
+and you will receive the result
+
+```sh
+This is ApacheBench, Version 2.3 <$Revision: 1879490 $>
+Copyright 1996 Adam Twiss, Zeus Technology Ltd, http://www.zeustech.net/
+Licensed to The Apache Software Foundation, http://www.apache.org/
+
+Benchmarking localhost (be patient)
+Completed 10000 requests
+Completed 20000 requests
+Completed 30000 requests
+Completed 40000 requests
+Completed 50000 requests
+Completed 60000 requests
+Completed 70000 requests
+Completed 80000 requests
+Completed 90000 requests
+Completed 100000 requests
+Finished 100000 requests
+
+
+Server Software:
+Server Hostname:        localhost
+Server Port:            10240
+
+Document Path:          /values/test3-key
+Document Length:        30 bytes
+
+Concurrency Level:      16
+Time taken for tests:   16.702 seconds
+Complete requests:      100000
+Failed requests:        0
+Total transferred:      13800000 bytes
+HTML transferred:       3000000 bytes
+Requests per second:    5987.17 [#/sec] (mean)
+Time per request:       2.672 [ms] (mean)
+Time per request:       0.167 [ms] (mean, across all concurrent requests)
+Transfer rate:          806.86 [Kbytes/sec] received
+
+Connection Times (ms)
+              min  mean[+/-sd] median   max
+Connect:        0    0   0.3      0      15
+Processing:     0    2   1.2      2      17
+Waiting:        0    2   1.2      2      17
+Total:          0    3   1.2      3      18
+
+Percentage of the requests served within a certain time (ms)
+  50%      3
+  66%      3
+  75%      3
+  80%      3
+  90%      3
+  95%      4
+  98%      5
+  99%      8
+ 100%     18 (longest request)
+```
+
+This indicates that the server is capable of handling over 5,900 requests per second on the testing machine.
+
+The performance of the internal database has not been measured yet. The numbers above reflect the performance when accessing the database through the HTTP protocol.
+
+Please note that there is an overhead associated with the HTTP server. The server must process the HTTP request, query the database, serialize the data, and send the response.
