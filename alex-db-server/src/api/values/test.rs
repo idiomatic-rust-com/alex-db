@@ -5375,7 +5375,6 @@ mod tests {
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
                         serde_json::json!({
-                            "key": &key,
                             "value": &value_array
                         })
                         .to_string(),
@@ -5453,7 +5452,6 @@ mod tests {
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
                         serde_json::json!({
-                            "key": &key,
                             "value": &value_array
                         })
                         .to_string(),
@@ -5531,7 +5529,6 @@ mod tests {
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
                         serde_json::json!({
-                            "key": &key,
                             "value": &value_array
                         })
                         .to_string(),
@@ -5607,7 +5604,6 @@ mod tests {
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
                         serde_json::json!({
-                            "key": &key,
                             "value": &value_array
                         })
                         .to_string(),
@@ -5681,7 +5677,6 @@ mod tests {
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
                         serde_json::json!({
-                            "key": &key,
                             "value": &value_array
                         })
                         .to_string(),
@@ -5755,7 +5750,6 @@ mod tests {
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
                         serde_json::json!({
-                            "key": &key,
                             "value": &value_array
                         })
                         .to_string(),
@@ -5824,7 +5818,6 @@ mod tests {
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
                         serde_json::json!({
-                            "key": &key,
                             "value": &value
                         })
                         .to_string(),
@@ -5890,7 +5883,6 @@ mod tests {
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
                         serde_json::json!({
-                            "key": &key,
                             "value": &value
                         })
                         .to_string(),
@@ -5956,7 +5948,6 @@ mod tests {
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
                         serde_json::json!({
-                            "key": &key,
                             "value": &value
                         })
                         .to_string(),
@@ -6022,7 +6013,6 @@ mod tests {
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
                         serde_json::json!({
-                            "key": &key,
                             "value": &value
                         })
                         .to_string(),
@@ -6088,7 +6078,6 @@ mod tests {
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
                         serde_json::json!({
-                            "key": &key,
                             "value": &value
                         })
                         .to_string(),
@@ -6154,7 +6143,6 @@ mod tests {
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
                         serde_json::json!({
-                            "key": &key,
                             "value": &value
                         })
                         .to_string(),
@@ -6222,7 +6210,6 @@ mod tests {
                     .header("X-Auth-Token".to_string(), app.api_key.unwrap().to_string())
                     .body(Body::from(
                         serde_json::json!({
-                            "key": &key,
                             "value": &value
                         })
                         .to_string(),
@@ -6289,7 +6276,6 @@ mod tests {
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
                         serde_json::json!({
-                            "key": &key,
                             "value": &value
                         })
                         .to_string(),
@@ -6320,7 +6306,6 @@ mod tests {
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
                         serde_json::json!({
-                            "key": &key,
                             "value": &value
                         })
                         .to_string(),
@@ -6331,66 +6316,6 @@ mod tests {
             .unwrap();
 
         assert_eq!(response.status(), StatusCode::NOT_FOUND);
-    }
-
-    #[tokio::test]
-    async fn update_409() {
-        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
-        let config = Config::new(db_config, 10240);
-        let app = app::get_app(config).await.unwrap();
-        let router = app.router;
-        let cloned_router = router.clone();
-
-        let key = Word().fake::<String>();
-        let value = Paragraph(2..10).fake::<String>();
-
-        let response = router
-            .oneshot(
-                Request::builder()
-                    .method(http::Method::POST)
-                    .uri("/values")
-                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
-                    .body(Body::from(
-                        serde_json::json!({
-                            "key": &key,
-                            "value": &value
-                        })
-                        .to_string(),
-                    ))
-                    .unwrap(),
-            )
-            .await
-            .unwrap();
-
-        assert_eq!(response.status(), StatusCode::CREATED);
-
-        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
-        let body: ValueResponse = serde_json::from_slice(&body).unwrap();
-
-        assert_eq!(body.key, key);
-        assert_eq!(body.value, Value::String(value));
-
-        let value = Paragraph(2..10).fake::<String>();
-
-        let response = cloned_router
-            .oneshot(
-                Request::builder()
-                    .method(http::Method::PUT)
-                    .uri(format!("/values/{key}"))
-                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
-                    .body(Body::from(
-                        serde_json::json!({
-                            "key": "wrong-key",
-                            "value": &value
-                        })
-                        .to_string(),
-                    ))
-                    .unwrap(),
-            )
-            .await
-            .unwrap();
-
-        assert_eq!(response.status(), StatusCode::CONFLICT);
     }
 
     #[tokio::test]
@@ -6440,7 +6365,6 @@ mod tests {
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
                         serde_json::json!({
-                            "key": &key,
                             "value": &value
                         })
                         .to_string(),

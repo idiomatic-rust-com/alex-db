@@ -152,15 +152,16 @@ curl --location --request POST 'http://localhost:10240/values' \
 --header 'X-Auth-Token: 63545360-301e-482f-93fc-84e6d11d8aee' \
 --data-raw '{
     "key": "test4-key",
-    "value": ["test4-value"]
+    "value": ["test4-value"],
+    "ttl": 120
 }'
 
 curl --location --request PUT 'http://localhost:10240/values/test4-key' \
 --header 'Content-Type: application/json' \
 --header 'X-Auth-Token: 63545360-301e-482f-93fc-84e6d11d8aee' \
 --data-raw '{
-    "key": "test4-key",
-    "value": "test4-value-updated"
+    "value": "test4-value-updated",
+    "ttl": 200
 }'
 ```
 

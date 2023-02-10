@@ -750,12 +750,12 @@ impl Db {
         }
     }
 
-    pub fn try_upsert(&self, value_put: ValuePut) -> Result<Option<ValueResponse>> {
+    pub fn try_upsert(&self, key: &str, value_put: ValuePut) -> Result<Option<ValueResponse>> {
         let mut stats = self.stats.write().unwrap();
         stats.inc_requests();
 
-        let mut key_index = self.indexes.key.write().unwrap();
-        let id = *key_index.get(&value_put.key).unwrap();
+        let key_index = self.indexes.key.read().unwrap();
+        let id = *key_index.get(key).unwrap();
 
         let mut values = self.values.write().unwrap();
         let original_value = values.get(&id).ok_or(Error::NotFound)?.clone();
@@ -764,7 +764,7 @@ impl Db {
         let delete_at = value_put.ttl.map(|ttl| now + Duration::seconds(ttl));
         let value_record = ValueRecord::new(
             id,
-            &value_put.key,
+            &original_value.key,
             &value_put.value,
             original_value.created_at,
             delete_at,
@@ -785,9 +785,6 @@ impl Db {
                 if let Some(delete_at) = delete_at {
                     delete_at_index.insert(delete_at.timestamp_nanos(), id);
                 }
-
-                key_index.remove(&original_value.key);
-                key_index.insert(value_put.key, id);
 
                 let mut updated_at_index = self.indexes.updated_at.write().unwrap();
                 updated_at_index.remove(&original_value.updated_at.timestamp_nanos());

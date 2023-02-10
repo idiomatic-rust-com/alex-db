@@ -60,8 +60,6 @@ pub struct ValuePrepend {
 
 #[derive(Clone, Debug, Deserialize, Serialize, ToSchema, Validate)]
 pub struct ValuePut {
-    #[validate(regex = "VALID_KEY")]
-    pub key: String,
     pub ttl: Option<i64>,
     pub value: Value,
 }

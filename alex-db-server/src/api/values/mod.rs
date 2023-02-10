@@ -405,7 +405,6 @@ pub async fn read(
         (status = 200, description = "Value updated.", body = ValueResponse),
         (status = 401, description = "Unauthorized request.", body = ResponseError),
         (status = 404, description = "Value not found by key.", body = ResponseError),
-        (status = 409, description = "Conflicting request.", body = ResponseError),
         (status = 422, description = "Unprocessable entity."),
     ),
     security(
@@ -424,13 +423,10 @@ pub async fn update(
     }
 
     input.validate()?;
-    if key != input.key {
-        return Err(AppError::Conflict);
-    }
 
     db.try_select(&key)?.ok_or(AppError::NotFound)?;
 
-    let value = db.try_upsert(input)?.ok_or(AppError::Conflict)?;
+    let value = db.try_upsert(&key, input)?.ok_or(AppError::Conflict)?;
 
     Ok((StatusCode::OK, Json(value)).into_response())
 }
