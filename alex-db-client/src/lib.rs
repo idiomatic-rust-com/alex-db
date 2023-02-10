@@ -16,14 +16,85 @@ pub async fn run() -> Result<()> {
         .with_description("AlexDB client")
         .with_banner("Welcome to AlexDB client")
         .with_command_async(
+            Command::new("append")
+                .arg(Arg::new("key").required(true))
+                .arg(Arg::new("value").required(true))
+                .about("Append value"),
+            |args, context| Box::pin(requests::values::append(args, context)),
+        )
+        .with_command_async(
             Command::new("connect")
                 .arg(Arg::new("address").required(true))
+                .arg(Arg::new("api_key").required(false))
                 .about("Connect to database server"),
             |args, context| Box::pin(connect::connect(args, context)),
         )
         .with_command_async(
+            Command::new("create")
+                .arg(Arg::new("key").required(true))
+                .arg(Arg::new("value").required(true))
+                .arg(Arg::new("ttl").required(false))
+                .about("Create value"),
+            |args, context| Box::pin(requests::values::create(args, context)),
+        )
+        .with_command_async(
+            Command::new("decrement")
+                .arg(Arg::new("key").required(true))
+                .arg(Arg::new("decrement").required(false))
+                .about("Decrement value"),
+            |args, context| Box::pin(requests::values::decrement(args, context)),
+        )
+        .with_command_async(
+            Command::new("delete")
+                .arg(Arg::new("key").required(true))
+                .about("Delete value"),
+            |args, context| Box::pin(requests::values::delete(args, context)),
+        )
+        .with_command_async(
+            Command::new("increment")
+                .arg(Arg::new("key").required(true))
+                .arg(Arg::new("increment").required(false))
+                .about("Increment value"),
+            |args, context| Box::pin(requests::values::increment(args, context)),
+        )
+        .with_command_async(
             Command::new("list").about("List values"),
             |args, context| Box::pin(requests::values::list(args, context)),
+        )
+        .with_command_async(
+            Command::new("pop_back")
+                .arg(Arg::new("key").required(true))
+                .arg(Arg::new("pop_back").required(false))
+                .about("Pop back value"),
+            |args, context| Box::pin(requests::values::pop_back(args, context)),
+        )
+        .with_command_async(
+            Command::new("pop_front")
+                .arg(Arg::new("key").required(true))
+                .arg(Arg::new("pop_front").required(false))
+                .about("Pop front value"),
+            |args, context| Box::pin(requests::values::pop_front(args, context)),
+        )
+        .with_command_async(
+            Command::new("prepend")
+                .arg(Arg::new("key").required(true))
+                .arg(Arg::new("value").required(true))
+                .about("Prepend value"),
+            |args, context| Box::pin(requests::values::prepend(args, context)),
+        )
+        .with_command_async(
+            Command::new("read")
+                .arg(Arg::new("key").required(true))
+                .about("Read value"),
+            |args, context| Box::pin(requests::values::read(args, context)),
+        )
+        .with_command_async(
+            Command::new("update")
+                .arg(Arg::new("key").required(true))
+                .arg(Arg::new("value").required(true))
+                .arg(Arg::new("ttl").required(false))
+                .about("Update value"),
+            |args, context| Box::pin(requests::values::update(args, context)),
         );
 
     repl.run_async().await

@@ -11,7 +11,7 @@ cp .env .env.local
 set -a
 source .env.local
 set +a
-cargo run
+RUST_LOG=alex-db-server=trace,info,debug,tokio=trace,runtime=trace cargo run
     Finished dev [unoptimized + debuginfo] target(s) in 1.30s
      Running `/home/michal/projects/alex-db/target/debug/alex-db-server`
 2023-02-09T14:21:02.746448Z  INFO alex_db_server::config: data_dir = Some("/home/michal/data/")
@@ -439,36 +439,36 @@ Document Path:          /values/test3-key
 Document Length:        30 bytes
 
 Concurrency Level:      16
-Time taken for tests:   16.702 seconds
+Time taken for tests:   12.560 seconds
 Complete requests:      100000
 Failed requests:        0
 Total transferred:      13800000 bytes
 HTML transferred:       3000000 bytes
-Requests per second:    5987.17 [#/sec] (mean)
-Time per request:       2.672 [ms] (mean)
-Time per request:       0.167 [ms] (mean, across all concurrent requests)
-Transfer rate:          806.86 [Kbytes/sec] received
+Requests per second:    7961.69 [#/sec] (mean)
+Time per request:       2.010 [ms] (mean)
+Time per request:       0.126 [ms] (mean, across all concurrent requests)
+Transfer rate:          1072.96 [Kbytes/sec] received
 
 Connection Times (ms)
               min  mean[+/-sd] median   max
-Connect:        0    0   0.3      0      15
-Processing:     0    2   1.2      2      17
-Waiting:        0    2   1.2      2      17
-Total:          0    3   1.2      3      18
+Connect:        0    0   0.1      0      14
+Processing:     0    2   0.6      2      17
+Waiting:        0    2   0.6      2      17
+Total:          0    2   0.6      2      17
 
 Percentage of the requests served within a certain time (ms)
-  50%      3
-  66%      3
-  75%      3
-  80%      3
-  90%      3
-  95%      4
-  98%      5
-  99%      8
- 100%     18 (longest request)
+  50%      2
+  66%      2
+  75%      2
+  80%      2
+  90%      2
+  95%      2
+  98%      2
+  99%      3
+ 100%     17 (longest request)
 ```
 
-This indicates that the server is capable of handling over 5,900 requests per second on the testing machine.
+This indicates that the server is capable of handling over 7,900 requests per second on the testing machine.
 
 The performance of the internal database has not been measured yet. The numbers above reflect the performance when accessing the database through the HTTP protocol.
 

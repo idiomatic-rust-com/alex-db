@@ -10,7 +10,10 @@ mod tests {
 
     #[tokio::test]
     async fn list_200() {
-        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let db_config = DbConfig {
+            enable_security_api_keys: false,
+            ..Default::default()
+        };
         let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;

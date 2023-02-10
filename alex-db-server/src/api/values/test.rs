@@ -18,7 +18,10 @@ mod tests {
 
     #[tokio::test]
     async fn append_200_array_array_boolean() {
-        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let db_config = DbConfig {
+            enable_security_api_keys: false,
+            ..Default::default()
+        };
         let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
@@ -93,7 +96,10 @@ mod tests {
 
     #[tokio::test]
     async fn append_200_array_array_integer() {
-        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let db_config = DbConfig {
+            enable_security_api_keys: false,
+            ..Default::default()
+        };
         let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
@@ -168,7 +174,10 @@ mod tests {
 
     #[tokio::test]
     async fn append_200_array_boolean() {
-        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let db_config = DbConfig {
+            enable_security_api_keys: false,
+            ..Default::default()
+        };
         let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
@@ -241,7 +250,10 @@ mod tests {
 
     #[tokio::test]
     async fn append_200_array_boolean_and_integer() {
-        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let db_config = DbConfig {
+            enable_security_api_keys: false,
+            ..Default::default()
+        };
         let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
@@ -314,7 +326,10 @@ mod tests {
 
     #[tokio::test]
     async fn append_200_array_integer() {
-        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let db_config = DbConfig {
+            enable_security_api_keys: false,
+            ..Default::default()
+        };
         let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
@@ -387,7 +402,10 @@ mod tests {
 
     #[tokio::test]
     async fn append_200_array_integer_and_string() {
-        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let db_config = DbConfig {
+            enable_security_api_keys: false,
+            ..Default::default()
+        };
         let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
@@ -460,7 +478,10 @@ mod tests {
 
     #[tokio::test]
     async fn append_200_array_string() {
-        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let db_config = DbConfig {
+            enable_security_api_keys: false,
+            ..Default::default()
+        };
         let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
@@ -533,7 +554,10 @@ mod tests {
 
     #[tokio::test]
     async fn append_200_array_string_and_boolean() {
-        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let db_config = DbConfig {
+            enable_security_api_keys: false,
+            ..Default::default()
+        };
         let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
@@ -743,7 +767,10 @@ mod tests {
 
     #[tokio::test]
     async fn append_404() {
-        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let db_config = DbConfig {
+            enable_security_api_keys: false,
+            ..Default::default()
+        };
         let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
@@ -771,7 +798,10 @@ mod tests {
 
     #[tokio::test]
     async fn append_409() {
-        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let db_config = DbConfig {
+            enable_security_api_keys: false,
+            ..Default::default()
+        };
         let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
@@ -828,7 +858,10 @@ mod tests {
 
     #[tokio::test]
     async fn append_422() {
-        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let db_config = DbConfig {
+            enable_security_api_keys: false,
+            ..Default::default()
+        };
         let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
@@ -888,7 +921,10 @@ mod tests {
 
     #[tokio::test]
     async fn create_201_array_array_boolean() {
-        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let db_config = DbConfig {
+            enable_security_api_keys: false,
+            ..Default::default()
+        };
         let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
@@ -931,7 +967,10 @@ mod tests {
 
     #[tokio::test]
     async fn create_201_array_array_integer() {
-        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let db_config = DbConfig {
+            enable_security_api_keys: false,
+            ..Default::default()
+        };
         let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
@@ -974,7 +1013,10 @@ mod tests {
 
     #[tokio::test]
     async fn create_201_array_array_string() {
-        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let db_config = DbConfig {
+            enable_security_api_keys: false,
+            ..Default::default()
+        };
         let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
@@ -1017,7 +1059,10 @@ mod tests {
 
     #[tokio::test]
     async fn create_201_array_boolean() {
-        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let db_config = DbConfig {
+            enable_security_api_keys: false,
+            ..Default::default()
+        };
         let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
@@ -1058,7 +1103,10 @@ mod tests {
 
     #[tokio::test]
     async fn create_201_array_integer() {
-        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let db_config = DbConfig {
+            enable_security_api_keys: false,
+            ..Default::default()
+        };
         let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
@@ -1099,7 +1147,10 @@ mod tests {
 
     #[tokio::test]
     async fn create_201_array_string() {
-        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let db_config = DbConfig {
+            enable_security_api_keys: false,
+            ..Default::default()
+        };
         let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
@@ -1140,7 +1191,10 @@ mod tests {
 
     #[tokio::test]
     async fn create_201_boolean() {
-        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let db_config = DbConfig {
+            enable_security_api_keys: false,
+            ..Default::default()
+        };
         let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
@@ -1177,7 +1231,10 @@ mod tests {
 
     #[tokio::test]
     async fn create_201_integer() {
-        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let db_config = DbConfig {
+            enable_security_api_keys: false,
+            ..Default::default()
+        };
         let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
@@ -1214,7 +1271,10 @@ mod tests {
 
     #[tokio::test]
     async fn create_201_string() {
-        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let db_config = DbConfig {
+            enable_security_api_keys: false,
+            ..Default::default()
+        };
         let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
@@ -1320,7 +1380,10 @@ mod tests {
 
     #[tokio::test]
     async fn create_409() {
-        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let db_config = DbConfig {
+            enable_security_api_keys: false,
+            ..Default::default()
+        };
         let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
@@ -1380,7 +1443,10 @@ mod tests {
 
     #[tokio::test]
     async fn create_422() {
-        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let db_config = DbConfig {
+            enable_security_api_keys: false,
+            ..Default::default()
+        };
         let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
@@ -1411,7 +1477,10 @@ mod tests {
 
     #[tokio::test]
     async fn decrement_200() {
-        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let db_config = DbConfig {
+            enable_security_api_keys: false,
+            ..Default::default()
+        };
         let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
@@ -1473,7 +1542,10 @@ mod tests {
 
     #[tokio::test]
     async fn decrement_200_max() {
-        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let db_config = DbConfig {
+            enable_security_api_keys: false,
+            ..Default::default()
+        };
         let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
@@ -1535,7 +1607,10 @@ mod tests {
 
     #[tokio::test]
     async fn decrement_200_min() {
-        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let db_config = DbConfig {
+            enable_security_api_keys: false,
+            ..Default::default()
+        };
         let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
@@ -1597,7 +1672,10 @@ mod tests {
 
     #[tokio::test]
     async fn decrement_200_min_plus_1() {
-        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let db_config = DbConfig {
+            enable_security_api_keys: false,
+            ..Default::default()
+        };
         let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
@@ -1723,7 +1801,10 @@ mod tests {
 
     #[tokio::test]
     async fn decrement_200_no_decrement_value() {
-        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let db_config = DbConfig {
+            enable_security_api_keys: false,
+            ..Default::default()
+        };
         let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
@@ -1838,7 +1919,10 @@ mod tests {
 
     #[tokio::test]
     async fn decrement_404() {
-        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let db_config = DbConfig {
+            enable_security_api_keys: false,
+            ..Default::default()
+        };
         let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
@@ -1865,7 +1949,10 @@ mod tests {
 
     #[tokio::test]
     async fn decrement_409() {
-        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let db_config = DbConfig {
+            enable_security_api_keys: false,
+            ..Default::default()
+        };
         let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
@@ -1921,7 +2008,10 @@ mod tests {
 
     #[tokio::test]
     async fn decrement_422() {
-        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let db_config = DbConfig {
+            enable_security_api_keys: false,
+            ..Default::default()
+        };
         let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
@@ -1978,7 +2068,10 @@ mod tests {
 
     #[tokio::test]
     async fn delete_204() {
-        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let db_config = DbConfig {
+            enable_security_api_keys: false,
+            ..Default::default()
+        };
         let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
@@ -2137,7 +2230,10 @@ mod tests {
 
     #[tokio::test]
     async fn delete_404() {
-        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let db_config = DbConfig {
+            enable_security_api_keys: false,
+            ..Default::default()
+        };
         let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
@@ -2204,7 +2300,10 @@ mod tests {
 
     #[tokio::test]
     async fn increment_200() {
-        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let db_config = DbConfig {
+            enable_security_api_keys: false,
+            ..Default::default()
+        };
         let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
@@ -2266,7 +2365,10 @@ mod tests {
 
     #[tokio::test]
     async fn increment_200_max() {
-        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let db_config = DbConfig {
+            enable_security_api_keys: false,
+            ..Default::default()
+        };
         let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
@@ -2328,7 +2430,10 @@ mod tests {
 
     #[tokio::test]
     async fn increment_200_min() {
-        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let db_config = DbConfig {
+            enable_security_api_keys: false,
+            ..Default::default()
+        };
         let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
@@ -2390,7 +2495,10 @@ mod tests {
 
     #[tokio::test]
     async fn increment_200_min_plus1() {
-        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let db_config = DbConfig {
+            enable_security_api_keys: false,
+            ..Default::default()
+        };
         let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
@@ -2516,7 +2624,10 @@ mod tests {
 
     #[tokio::test]
     async fn increment_200_no_increment_value() {
-        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let db_config = DbConfig {
+            enable_security_api_keys: false,
+            ..Default::default()
+        };
         let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
@@ -2631,7 +2742,10 @@ mod tests {
 
     #[tokio::test]
     async fn increment_404() {
-        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let db_config = DbConfig {
+            enable_security_api_keys: false,
+            ..Default::default()
+        };
         let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
@@ -2658,7 +2772,10 @@ mod tests {
 
     #[tokio::test]
     async fn increment_409() {
-        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let db_config = DbConfig {
+            enable_security_api_keys: false,
+            ..Default::default()
+        };
         let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
@@ -2714,7 +2831,10 @@ mod tests {
 
     #[tokio::test]
     async fn increment_422() {
-        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let db_config = DbConfig {
+            enable_security_api_keys: false,
+            ..Default::default()
+        };
         let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
@@ -2771,7 +2891,10 @@ mod tests {
 
     #[tokio::test]
     async fn list_one_200() {
-        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let db_config = DbConfig {
+            enable_security_api_keys: false,
+            ..Default::default()
+        };
         let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
@@ -2828,7 +2951,10 @@ mod tests {
 
     #[tokio::test]
     async fn list_two_200() {
-        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let db_config = DbConfig {
+            enable_security_api_keys: false,
+            ..Default::default()
+        };
         let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
@@ -2915,7 +3041,10 @@ mod tests {
 
     #[tokio::test]
     async fn list_empty_200() {
-        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let db_config = DbConfig {
+            enable_security_api_keys: false,
+            ..Default::default()
+        };
         let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
@@ -2992,7 +3121,10 @@ mod tests {
 
     #[tokio::test]
     async fn pop_back_200_array_boolean() {
-        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let db_config = DbConfig {
+            enable_security_api_keys: false,
+            ..Default::default()
+        };
         let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
@@ -3061,7 +3193,10 @@ mod tests {
 
     #[tokio::test]
     async fn pop_back_200_array_boolean_more() {
-        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let db_config = DbConfig {
+            enable_security_api_keys: false,
+            ..Default::default()
+        };
         let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
@@ -3132,7 +3267,10 @@ mod tests {
 
     #[tokio::test]
     async fn pop_back_200_array_integer() {
-        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let db_config = DbConfig {
+            enable_security_api_keys: false,
+            ..Default::default()
+        };
         let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
@@ -3197,7 +3335,10 @@ mod tests {
 
     #[tokio::test]
     async fn pop_back_200_array_integer_more() {
-        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let db_config = DbConfig {
+            enable_security_api_keys: false,
+            ..Default::default()
+        };
         let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
@@ -3277,7 +3418,10 @@ mod tests {
 
     #[tokio::test]
     async fn pop_back_200_array_string() {
-        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let db_config = DbConfig {
+            enable_security_api_keys: false,
+            ..Default::default()
+        };
         let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
@@ -3482,7 +3626,10 @@ mod tests {
 
     #[tokio::test]
     async fn pop_back_404() {
-        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let db_config = DbConfig {
+            enable_security_api_keys: false,
+            ..Default::default()
+        };
         let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
@@ -3509,7 +3656,10 @@ mod tests {
 
     #[tokio::test]
     async fn pop_back_409() {
-        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let db_config = DbConfig {
+            enable_security_api_keys: false,
+            ..Default::default()
+        };
         let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
@@ -3565,7 +3715,10 @@ mod tests {
 
     #[tokio::test]
     async fn pop_back_422() {
-        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let db_config = DbConfig {
+            enable_security_api_keys: false,
+            ..Default::default()
+        };
         let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
@@ -3625,7 +3778,10 @@ mod tests {
 
     #[tokio::test]
     async fn pop_front_200_array_boolean() {
-        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let db_config = DbConfig {
+            enable_security_api_keys: false,
+            ..Default::default()
+        };
         let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
@@ -3694,7 +3850,10 @@ mod tests {
 
     #[tokio::test]
     async fn pop_front_200_array_boolean_more() {
-        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let db_config = DbConfig {
+            enable_security_api_keys: false,
+            ..Default::default()
+        };
         let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
@@ -3765,7 +3924,10 @@ mod tests {
 
     #[tokio::test]
     async fn pop_front_200_array_integer() {
-        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let db_config = DbConfig {
+            enable_security_api_keys: false,
+            ..Default::default()
+        };
         let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
@@ -3830,7 +3992,10 @@ mod tests {
 
     #[tokio::test]
     async fn pop_front_200_array_integer_more() {
-        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let db_config = DbConfig {
+            enable_security_api_keys: false,
+            ..Default::default()
+        };
         let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
@@ -3910,7 +4075,10 @@ mod tests {
 
     #[tokio::test]
     async fn pop_front_200_array_string() {
-        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let db_config = DbConfig {
+            enable_security_api_keys: false,
+            ..Default::default()
+        };
         let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
@@ -4115,7 +4283,10 @@ mod tests {
 
     #[tokio::test]
     async fn pop_front_404() {
-        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let db_config = DbConfig {
+            enable_security_api_keys: false,
+            ..Default::default()
+        };
         let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
@@ -4142,7 +4313,10 @@ mod tests {
 
     #[tokio::test]
     async fn pop_front_409() {
-        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let db_config = DbConfig {
+            enable_security_api_keys: false,
+            ..Default::default()
+        };
         let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
@@ -4198,7 +4372,10 @@ mod tests {
 
     #[tokio::test]
     async fn pop_front_422() {
-        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let db_config = DbConfig {
+            enable_security_api_keys: false,
+            ..Default::default()
+        };
         let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
@@ -4258,7 +4435,10 @@ mod tests {
 
     #[tokio::test]
     async fn prepend_200_array_array_boolean() {
-        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let db_config = DbConfig {
+            enable_security_api_keys: false,
+            ..Default::default()
+        };
         let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
@@ -4333,7 +4513,10 @@ mod tests {
 
     #[tokio::test]
     async fn prepend_200_array_array_integer() {
-        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let db_config = DbConfig {
+            enable_security_api_keys: false,
+            ..Default::default()
+        };
         let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
@@ -4408,7 +4591,10 @@ mod tests {
 
     #[tokio::test]
     async fn prepend_200_array_boolean() {
-        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let db_config = DbConfig {
+            enable_security_api_keys: false,
+            ..Default::default()
+        };
         let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
@@ -4481,7 +4667,10 @@ mod tests {
 
     #[tokio::test]
     async fn prepend_200_array_boolean_and_integer() {
-        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let db_config = DbConfig {
+            enable_security_api_keys: false,
+            ..Default::default()
+        };
         let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
@@ -4554,7 +4743,10 @@ mod tests {
 
     #[tokio::test]
     async fn prepend_200_array_integer() {
-        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let db_config = DbConfig {
+            enable_security_api_keys: false,
+            ..Default::default()
+        };
         let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
@@ -4627,7 +4819,10 @@ mod tests {
 
     #[tokio::test]
     async fn prepend_200_array_integer_and_string() {
-        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let db_config = DbConfig {
+            enable_security_api_keys: false,
+            ..Default::default()
+        };
         let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
@@ -4700,7 +4895,10 @@ mod tests {
 
     #[tokio::test]
     async fn prepend_200_array_string() {
-        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let db_config = DbConfig {
+            enable_security_api_keys: false,
+            ..Default::default()
+        };
         let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
@@ -4773,7 +4971,10 @@ mod tests {
 
     #[tokio::test]
     async fn prepend_200_array_string_and_boolean() {
-        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let db_config = DbConfig {
+            enable_security_api_keys: false,
+            ..Default::default()
+        };
         let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
@@ -4983,7 +5184,10 @@ mod tests {
 
     #[tokio::test]
     async fn prepend_404() {
-        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let db_config = DbConfig {
+            enable_security_api_keys: false,
+            ..Default::default()
+        };
         let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
@@ -5011,7 +5215,10 @@ mod tests {
 
     #[tokio::test]
     async fn prepend_409() {
-        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let db_config = DbConfig {
+            enable_security_api_keys: false,
+            ..Default::default()
+        };
         let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
@@ -5068,7 +5275,10 @@ mod tests {
 
     #[tokio::test]
     async fn prepend_422() {
-        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let db_config = DbConfig {
+            enable_security_api_keys: false,
+            ..Default::default()
+        };
         let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
@@ -5128,7 +5338,10 @@ mod tests {
 
     #[tokio::test]
     async fn read_200() {
-        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let db_config = DbConfig {
+            enable_security_api_keys: false,
+            ..Default::default()
+        };
         let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
@@ -5299,7 +5512,10 @@ mod tests {
 
     #[tokio::test]
     async fn read_404() {
-        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let db_config = DbConfig {
+            enable_security_api_keys: false,
+            ..Default::default()
+        };
         let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
@@ -5323,7 +5539,10 @@ mod tests {
 
     #[tokio::test]
     async fn update_200_array_array_boolean() {
-        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let db_config = DbConfig {
+            enable_security_api_keys: false,
+            ..Default::default()
+        };
         let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
@@ -5374,10 +5593,7 @@ mod tests {
                     .uri(format!("/values/{key}"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
-                        serde_json::json!({
-                            "value": &value_array
-                        })
-                        .to_string(),
+                        serde_json::json!({ "value": &value_array }).to_string(),
                     ))
                     .unwrap(),
             )
@@ -5400,7 +5616,10 @@ mod tests {
 
     #[tokio::test]
     async fn update_200_array_array_integer() {
-        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let db_config = DbConfig {
+            enable_security_api_keys: false,
+            ..Default::default()
+        };
         let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
@@ -5451,10 +5670,7 @@ mod tests {
                     .uri(format!("/values/{key}"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
-                        serde_json::json!({
-                            "value": &value_array
-                        })
-                        .to_string(),
+                        serde_json::json!({ "value": &value_array }).to_string(),
                     ))
                     .unwrap(),
             )
@@ -5477,7 +5693,10 @@ mod tests {
 
     #[tokio::test]
     async fn update_200_array_array_string() {
-        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let db_config = DbConfig {
+            enable_security_api_keys: false,
+            ..Default::default()
+        };
         let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
@@ -5528,10 +5747,7 @@ mod tests {
                     .uri(format!("/values/{key}"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
-                        serde_json::json!({
-                            "value": &value_array
-                        })
-                        .to_string(),
+                        serde_json::json!({ "value": &value_array }).to_string(),
                     ))
                     .unwrap(),
             )
@@ -5554,7 +5770,10 @@ mod tests {
 
     #[tokio::test]
     async fn update_200_array_boolean() {
-        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let db_config = DbConfig {
+            enable_security_api_keys: false,
+            ..Default::default()
+        };
         let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
@@ -5603,10 +5822,7 @@ mod tests {
                     .uri(format!("/values/{key}"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
-                        serde_json::json!({
-                            "value": &value_array
-                        })
-                        .to_string(),
+                        serde_json::json!({ "value": &value_array }).to_string(),
                     ))
                     .unwrap(),
             )
@@ -5627,7 +5843,10 @@ mod tests {
 
     #[tokio::test]
     async fn update_200_array_integer() {
-        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let db_config = DbConfig {
+            enable_security_api_keys: false,
+            ..Default::default()
+        };
         let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
@@ -5676,10 +5895,7 @@ mod tests {
                     .uri(format!("/values/{key}"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
-                        serde_json::json!({
-                            "value": &value_array
-                        })
-                        .to_string(),
+                        serde_json::json!({ "value": &value_array }).to_string(),
                     ))
                     .unwrap(),
             )
@@ -5700,7 +5916,10 @@ mod tests {
 
     #[tokio::test]
     async fn update_200_array_string() {
-        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let db_config = DbConfig {
+            enable_security_api_keys: false,
+            ..Default::default()
+        };
         let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
@@ -5749,10 +5968,7 @@ mod tests {
                     .uri(format!("/values/{key}"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
-                        serde_json::json!({
-                            "value": &value_array
-                        })
-                        .to_string(),
+                        serde_json::json!({ "value": &value_array }).to_string(),
                     ))
                     .unwrap(),
             )
@@ -5773,7 +5989,10 @@ mod tests {
 
     #[tokio::test]
     async fn update_200_boolean() {
-        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let db_config = DbConfig {
+            enable_security_api_keys: false,
+            ..Default::default()
+        };
         let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
@@ -5817,10 +6036,7 @@ mod tests {
                     .uri(format!("/values/{key}"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
-                        serde_json::json!({
-                            "value": &value
-                        })
-                        .to_string(),
+                        serde_json::json!({ "value": &value }).to_string(),
                     ))
                     .unwrap(),
             )
@@ -5838,7 +6054,10 @@ mod tests {
 
     #[tokio::test]
     async fn update_200_boolean_to_integer() {
-        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let db_config = DbConfig {
+            enable_security_api_keys: false,
+            ..Default::default()
+        };
         let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
@@ -5882,10 +6101,7 @@ mod tests {
                     .uri(format!("/values/{key}"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
-                        serde_json::json!({
-                            "value": &value
-                        })
-                        .to_string(),
+                        serde_json::json!({ "value": &value }).to_string(),
                     ))
                     .unwrap(),
             )
@@ -5903,7 +6119,10 @@ mod tests {
 
     #[tokio::test]
     async fn update_200_integer() {
-        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let db_config = DbConfig {
+            enable_security_api_keys: false,
+            ..Default::default()
+        };
         let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
@@ -5947,10 +6166,7 @@ mod tests {
                     .uri(format!("/values/{key}"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
-                        serde_json::json!({
-                            "value": &value
-                        })
-                        .to_string(),
+                        serde_json::json!({ "value": &value }).to_string(),
                     ))
                     .unwrap(),
             )
@@ -5968,7 +6184,10 @@ mod tests {
 
     #[tokio::test]
     async fn update_200_integer_to_boolean() {
-        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let db_config = DbConfig {
+            enable_security_api_keys: false,
+            ..Default::default()
+        };
         let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
@@ -6012,10 +6231,7 @@ mod tests {
                     .uri(format!("/values/{key}"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
-                        serde_json::json!({
-                            "value": &value
-                        })
-                        .to_string(),
+                        serde_json::json!({ "value": &value }).to_string(),
                     ))
                     .unwrap(),
             )
@@ -6033,7 +6249,10 @@ mod tests {
 
     #[tokio::test]
     async fn update_200_string() {
-        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let db_config = DbConfig {
+            enable_security_api_keys: false,
+            ..Default::default()
+        };
         let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
@@ -6077,10 +6296,7 @@ mod tests {
                     .uri(format!("/values/{key}"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
-                        serde_json::json!({
-                            "value": &value
-                        })
-                        .to_string(),
+                        serde_json::json!({ "value": &value }).to_string(),
                     ))
                     .unwrap(),
             )
@@ -6098,7 +6314,10 @@ mod tests {
 
     #[tokio::test]
     async fn update_200_string_to_boolean() {
-        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let db_config = DbConfig {
+            enable_security_api_keys: false,
+            ..Default::default()
+        };
         let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
@@ -6142,10 +6361,7 @@ mod tests {
                     .uri(format!("/values/{key}"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
-                        serde_json::json!({
-                            "value": &value
-                        })
-                        .to_string(),
+                        serde_json::json!({ "value": &value }).to_string(),
                     ))
                     .unwrap(),
             )
@@ -6209,10 +6425,7 @@ mod tests {
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .header("X-Auth-Token".to_string(), app.api_key.unwrap().to_string())
                     .body(Body::from(
-                        serde_json::json!({
-                            "value": &value
-                        })
-                        .to_string(),
+                        serde_json::json!({ "value": &value }).to_string(),
                     ))
                     .unwrap(),
             )
@@ -6275,10 +6488,7 @@ mod tests {
                     .uri(format!("/values/{key}"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
-                        serde_json::json!({
-                            "value": &value
-                        })
-                        .to_string(),
+                        serde_json::json!({ "value": &value }).to_string(),
                     ))
                     .unwrap(),
             )
@@ -6290,7 +6500,10 @@ mod tests {
 
     #[tokio::test]
     async fn update_404() {
-        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let db_config = DbConfig {
+            enable_security_api_keys: false,
+            ..Default::default()
+        };
         let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
@@ -6305,10 +6518,7 @@ mod tests {
                     .uri(format!("/values/{key}"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
-                        serde_json::json!({
-                            "value": &value
-                        })
-                        .to_string(),
+                        serde_json::json!({ "value": &value }).to_string(),
                     ))
                     .unwrap(),
             )
@@ -6320,7 +6530,10 @@ mod tests {
 
     #[tokio::test]
     async fn update_422() {
-        let db_config = DbConfig { enable_security_api_keys: false, ..Default::default() };
+        let db_config = DbConfig {
+            enable_security_api_keys: false,
+            ..Default::default()
+        };
         let config = Config::new(db_config, 10240);
         let app = app::get_app(config).await.unwrap();
         let router = app.router;
@@ -6364,10 +6577,7 @@ mod tests {
                     .uri(format!("/values/{key}"))
                     .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                     .body(Body::from(
-                        serde_json::json!({
-                            "value": &value
-                        })
-                        .to_string(),
+                        serde_json::json!({ "value": &value }).to_string(),
                     ))
                     .unwrap(),
             )

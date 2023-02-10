@@ -1,10 +1,10 @@
 use uuid::Uuid;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Connection {
     pub address: String,
     pub api_key: Option<Uuid>,
-    is_default: bool,
+    pub is_default: bool,
 }
 
 impl Connection {
@@ -17,7 +17,7 @@ impl Connection {
     }
 }
 
-#[derive(Default)]
+#[derive(Debug, Default)]
 pub struct Context {
     pub connections: Vec<Connection>,
 }

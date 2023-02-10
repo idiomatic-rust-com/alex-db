@@ -60,7 +60,7 @@ pub async fn append(
 
     input.validate()?;
 
-    db.try_select(&key)?.ok_or(AppError::NotFound)?;
+    db.try_read(&key)?.ok_or(AppError::NotFound)?;
 
     let value = db.try_append(&key, input)?.ok_or(AppError::Conflict)?;
 
@@ -94,7 +94,7 @@ pub async fn create(
 
     input.validate()?;
     let key = input.key.clone();
-    let value = db.try_select(&key)?;
+    let value = db.try_read(&key)?;
 
     match value {
         None => {
@@ -138,7 +138,7 @@ pub async fn decrement(
 
     input.validate()?;
 
-    db.try_select(&key)?.ok_or(AppError::NotFound)?;
+    db.try_read(&key)?.ok_or(AppError::NotFound)?;
 
     let value = db.try_decrement(&key, input)?.ok_or(AppError::Conflict)?;
 
@@ -171,7 +171,7 @@ pub async fn delete(
         return Err(AppError::Unauthorized);
     }
 
-    db.try_select(&key)?.ok_or(AppError::NotFound)?;
+    db.try_read(&key)?.ok_or(AppError::NotFound)?;
     db.try_delete_by_key(&key)?;
 
     Ok((StatusCode::NO_CONTENT, ()).into_response())
@@ -208,7 +208,7 @@ pub async fn increment(
 
     input.validate()?;
 
-    db.try_select(&key)?.ok_or(AppError::NotFound)?;
+    db.try_read(&key)?.ok_or(AppError::NotFound)?;
 
     let value = db.try_increment(&key, input)?.ok_or(AppError::Conflict)?;
 
@@ -241,7 +241,7 @@ pub async fn list(
     let direction = query_params.direction.unwrap_or(Direction::Asc);
     let sort = query_params.sort.unwrap_or(Sort::CreatedAt);
 
-    let values = db.select_all(direction, query_params.limit, query_params.page, sort)?;
+    let values = db.list(direction, query_params.limit, query_params.page, sort)?;
 
     Ok((StatusCode::OK, Json(values)).into_response())
 }
@@ -278,7 +278,7 @@ pub async fn pop_back(
 
     input.validate()?;
 
-    db.try_select(&key)?.ok_or(AppError::NotFound)?;
+    db.try_read(&key)?.ok_or(AppError::NotFound)?;
 
     let values = db.try_pop_back(&key, input)?.ok_or(AppError::Conflict)?;
 
@@ -317,7 +317,7 @@ pub async fn pop_front(
 
     input.validate()?;
 
-    db.try_select(&key)?.ok_or(AppError::NotFound)?;
+    db.try_read(&key)?.ok_or(AppError::NotFound)?;
 
     let values = db.try_pop_front(&key, input)?.ok_or(AppError::Conflict)?;
 
@@ -355,7 +355,7 @@ pub async fn prepend(
 
     input.validate()?;
 
-    db.try_select(&key)?.ok_or(AppError::NotFound)?;
+    db.try_read(&key)?.ok_or(AppError::NotFound)?;
 
     let value = db.try_prepend(&key, input)?.ok_or(AppError::Conflict)?;
 
@@ -388,7 +388,7 @@ pub async fn read(
         return Err(AppError::Unauthorized);
     }
 
-    let value = db.try_select(&key)?.ok_or(AppError::NotFound)?;
+    let value = db.try_read(&key)?.ok_or(AppError::NotFound)?;
 
     Ok((StatusCode::OK, Json(value)).into_response())
 }
@@ -424,9 +424,9 @@ pub async fn update(
 
     input.validate()?;
 
-    db.try_select(&key)?.ok_or(AppError::NotFound)?;
+    db.try_read(&key)?.ok_or(AppError::NotFound)?;
 
-    let value = db.try_upsert(&key, input)?.ok_or(AppError::Conflict)?;
+    let value = db.try_update(&key, input)?.ok_or(AppError::Conflict)?;
 
     Ok((StatusCode::OK, Json(value)).into_response())
 }

@@ -1,8 +1,9 @@
+use crate::error::Error;
 use chrono::{DateTime, Utc};
 use lazy_static::lazy_static;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
-use std::collections::VecDeque;
+use std::{collections::VecDeque, str::FromStr};
 use utoipa::ToSchema;
 use uuid::Uuid;
 use validator::Validate;
@@ -18,6 +19,44 @@ pub enum Value {
     Boolean(bool),
     Integer(i64),
     String(String),
+}
+
+impl FromStr for Value {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let mut destination_value = match s.parse::<bool>() {
+            Err(_) => None,
+            Ok(value) => Some(Value::Boolean(value)),
+        };
+
+        if destination_value.is_none() {
+            destination_value = match s.parse::<i64>() {
+                Err(_) => None,
+                Ok(value) => Some(Value::Integer(value)),
+            };
+        }
+
+        if destination_value.is_none() {
+            let splitted_arguments = s.split("::").into_iter().collect::<Vec<&str>>();
+            if splitted_arguments.len() > 1 {
+                let mut splitted_argument_values = VecDeque::new();
+                for splitted_argument in splitted_arguments {
+                    let splitted_argument_value = Self::from_str(splitted_argument)?;
+                    splitted_argument_values.push_back(splitted_argument_value);
+                }
+                destination_value = Some(Value::Array(splitted_argument_values));
+            }
+        }
+
+        if destination_value.is_none() {
+            destination_value = Some(Value::String(s.to_string()));
+        }
+
+        let value = destination_value.ok_or(Error::ValueParse)?;
+
+        Ok(value)
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, ToSchema, Validate)]

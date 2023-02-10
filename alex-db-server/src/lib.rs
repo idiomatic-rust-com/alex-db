@@ -50,8 +50,9 @@ pub struct Args {
 pub async fn run() -> Result<()> {
     tracing_subscriber::registry()
         .with(
-            tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| "alex_db_server=debug,tower_http=debug".into()),
+            tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| {
+                "alex_db_server=error,runtime=error,tokio=error,tower_http=error".into()
+            }),
         )
         .with(tracing_subscriber::fmt::layer())
         .init();

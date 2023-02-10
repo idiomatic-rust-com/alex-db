@@ -194,7 +194,7 @@ impl Db {
         Ok(())
     }
 
-    pub fn select_all(
+    pub fn list(
         &self,
         direction: Direction,
         limit: Option<usize>,
@@ -725,7 +725,7 @@ impl Db {
         }
     }
 
-    pub fn try_select(&self, key: &str) -> Result<Option<ValueResponse>> {
+    pub fn try_read(&self, key: &str) -> Result<Option<ValueResponse>> {
         let mut stats = self.stats.write().unwrap();
         stats.inc_requests();
 
@@ -750,7 +750,7 @@ impl Db {
         }
     }
 
-    pub fn try_upsert(&self, key: &str, value_put: ValuePut) -> Result<Option<ValueResponse>> {
+    pub fn try_update(&self, key: &str, value_put: ValuePut) -> Result<Option<ValueResponse>> {
         let mut stats = self.stats.write().unwrap();
         stats.inc_requests();
 
