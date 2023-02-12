@@ -3,8 +3,8 @@ use crate::{
     error::{ClientError, ServerError},
 };
 use alex_db_lib::value_record::{
-    Value, ValueAppend, ValueDecrement, ValueIncrement, ValuePopBack, ValuePopFront, ValuePost, ValuePrepend, ValuePut,
-    ValueResponse,
+    Value, ValueAppend, ValueDecrement, ValueIncrement, ValuePopBack, ValuePopFront, ValuePost,
+    ValuePrepend, ValuePut, ValueResponse,
 };
 use reedline_repl_rs::clap::ArgMatches;
 use reqwest::StatusCode;
@@ -373,8 +373,7 @@ pub async fn pop_back<'a>(
 
     let request_response = request_builder.send().await?.text().await?;
 
-    let values: Result<Vec<Value>, serde_json::Error> =
-        serde_json::from_str(&request_response);
+    let values: Result<Vec<Value>, serde_json::Error> = serde_json::from_str(&request_response);
 
     match values {
         Err(_) => {
@@ -391,11 +390,7 @@ pub async fn pop_back<'a>(
             response.push_str("Value poped back\n");
 
             for (index, value) in values.iter().enumerate() {
-                response.push_str(&format!(
-                    "{}) Value: {:?}\n",
-                    index + 1,
-                    value
-                ));
+                response.push_str(&format!("{}) Value: {:?}\n", index + 1, value));
             }
 
             Ok(Some(response))
@@ -436,8 +431,7 @@ pub async fn pop_front<'a>(
 
     let request_response = request_builder.send().await?.text().await?;
 
-    let values: Result<Vec<Value>, serde_json::Error> =
-        serde_json::from_str(&request_response);
+    let values: Result<Vec<Value>, serde_json::Error> = serde_json::from_str(&request_response);
 
     match values {
         Err(_) => {
@@ -454,11 +448,7 @@ pub async fn pop_front<'a>(
             response.push_str("Value poped front\n");
 
             for (index, value) in values.iter().enumerate() {
-                response.push_str(&format!(
-                    "{}) Value: {:?}\n",
-                    index + 1,
-                    value
-                ));
+                response.push_str(&format!("{}) Value: {:?}\n", index + 1, value));
             }
 
             Ok(Some(response))
