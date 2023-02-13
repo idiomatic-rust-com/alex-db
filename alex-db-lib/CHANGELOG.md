@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.1.0 (2023-XX-YY) [Unreleased]
+## 0.1.0 (2023-02-14)
 
 ### Added
 
@@ -8,4 +8,5 @@
 - Basic database operations
 - Indexes
 - API keys
-- Saving/restoring database
+- Saving/restoring the database
+- Documentation

@@ -30,7 +30,7 @@ AlexDB is a basic key-value storage database that can function both as an in-mem
 - Pagination support
 - Value expiration
 
-## Planned features
+## Possible future features
 
 - ACID?
 - RAFT?

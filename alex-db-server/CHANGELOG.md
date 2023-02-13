@@ -1,15 +1,16 @@
 # Changelog
 
-## 0.1.0 (2023-XX-YY) [Unreleased]
+## 0.1.0 (2023-02-14)
 
 ### Added
 
 - Basic database server
 - Endpoints for values CRUD operations
 - Endpoint for statistics
-- API documentation
+- API Documentation
 - API tests
 - Authentication via API keys
-- Saving database in background
+- Saving database in the background
 - Garbage collection of expired values
 - Logging
+- Documentation

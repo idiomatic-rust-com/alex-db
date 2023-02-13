@@ -15,7 +15,7 @@ rust-version = "1.64"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-alex-db-lib = { path = "../alex-db-lib" }
+alex-db-lib = "0.1"
 axum = { features = ["headers"], version = "0.6" }
 axum-macros = "0.3"
 chrono = { version = "0.4", features = ["serde"] }
