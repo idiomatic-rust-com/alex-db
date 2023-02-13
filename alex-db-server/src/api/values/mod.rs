@@ -98,7 +98,7 @@ pub async fn create(
 
     match value {
         None => {
-            let value = db.try_insert(input)?.ok_or(AppError::Conflict)?;
+            let value = db.try_create(input)?.ok_or(AppError::Conflict)?;
 
             Ok((StatusCode::CREATED, Json(value)).into_response())
         }
@@ -172,7 +172,7 @@ pub async fn delete(
     }
 
     db.try_read(&key)?.ok_or(AppError::NotFound)?;
-    db.try_delete_by_key(&key)?;
+    db.try_delete(&key)?;
 
     Ok((StatusCode::NO_CONTENT, ()).into_response())
 }

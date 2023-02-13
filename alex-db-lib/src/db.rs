@@ -32,6 +32,18 @@ pub struct Db {
 }
 
 impl Db {
+    /// Creates new DB.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use alex_db_lib::{config::Config, db::Db};
+    ///
+    /// let config = Config::default();
+    /// let db = Db::new(config);
+    ///
+    /// assert_eq!(0, db.values.read().unwrap().len());
+    /// ```
     pub fn new(config: Config) -> Self {
         Self {
             api_keys: RwLock::new(vec![]),
@@ -194,6 +206,32 @@ impl Db {
         Ok(())
     }
 
+    /// Returns a list of records from the database.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use alex_db_lib::{config::Config, db::{Db, Direction, Sort}, value_record::{Value, ValuePost}};
+    ///
+    /// let config = Config::default();
+    /// let mut db = Db::new(config);
+    ///
+    /// assert_eq!(0, db.stats.read().unwrap().reads);
+    ///
+    /// let value_responses = db.list(Direction::Asc, None, None, Sort::CreatedAt).unwrap();
+    ///
+    /// assert_eq!(0, value_responses.len());
+    /// assert_eq!(0, db.stats.read().unwrap().reads);
+    ///
+    /// let key = "test_key".to_string();
+    /// let value = Value::Boolean(true);
+    /// let value_post = ValuePost { key: key.clone(), ttl: None, value: value.clone()};
+    /// db.try_create(value_post);
+    /// let value_responses = db.list(Direction::Asc, None, None, Sort::CreatedAt).unwrap();
+    ///
+    /// assert_eq!(1, value_responses.len());
+    /// assert_eq!(1, db.stats.read().unwrap().reads);
+    /// ```
     pub fn list(
         &self,
         direction: Direction,
@@ -295,6 +333,38 @@ impl Db {
         Ok(result)
     }
 
+    /// Tries to append a value to an existing record in the database using the specified key.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use alex_db_lib::{config::Config, db::Db, value_record::{Value, ValueAppend, ValuePost}};
+    /// use std::collections::VecDeque;
+    ///
+    /// let config = Config::default();
+    /// let mut db = Db::new(config);
+    ///
+    /// assert_eq!(0, db.stats.read().unwrap().writes);
+    ///
+    /// let key = "test_key".to_string();
+    /// let value1 = Value::String("test_value".to_string());
+    /// let value1_array = Value::Array(VecDeque::from([value1.clone()]));
+    /// let value_post = ValuePost { key: key.clone(), ttl: None, value: value1_array.clone()};
+    /// let value_response = db.try_create(value_post).unwrap().unwrap();
+    ///
+    /// assert_eq!(value_response.key, key);
+    /// assert_eq!(value_response.value, value1_array);
+    /// assert_eq!(1, db.stats.read().unwrap().writes);
+    ///
+    /// let value2 = Value::Integer(100);
+    /// let value2_array = Value::Array(VecDeque::from([value2.clone()]));
+    /// let value_append = ValueAppend { append: value2_array.clone()};
+    /// let value_response = db.try_append(&key, value_append).unwrap().unwrap();
+    ///
+    /// assert_eq!(value_response.key, key);
+    /// assert_eq!(value_response.value, Value::Array(VecDeque::from([value1, value2])));
+    /// assert_eq!(2, db.stats.read().unwrap().writes);
+    /// ```
     pub fn try_append(
         &self,
         key: &str,
@@ -345,6 +415,124 @@ impl Db {
         }
     }
 
+    /// Tries to create a new record containing a value in the database.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use alex_db_lib::{config::Config, db::Db, value_record::{Value, ValuePost}};
+    ///
+    /// let config = Config::default();
+    /// let mut db = Db::new(config);
+    ///
+    /// assert_eq!(0, db.indexes.created_at.read().unwrap().len());
+    /// assert_eq!(0, db.indexes.delete_at.read().unwrap().len());
+    /// assert_eq!(0, db.indexes.key.read().unwrap().len());
+    /// assert_eq!(0, db.indexes.updated_at.read().unwrap().len());
+    /// assert_eq!(0, db.stats.read().unwrap().writes);
+    /// assert_eq!(0, db.values.read().unwrap().len());
+    ///
+    /// let key = "test_key1".to_string();
+    /// let value = Value::String("test_value".to_string());
+    /// let value_post = ValuePost { key: key.clone(), ttl: None, value: value.clone()};
+    /// let value_response = db.try_create(value_post).unwrap().unwrap();
+    ///
+    /// assert_eq!(value_response.key, key);
+    /// assert_eq!(value_response.value, value);
+    /// assert_eq!(1, db.indexes.created_at.read().unwrap().len());
+    /// assert_eq!(0, db.indexes.delete_at.read().unwrap().len());
+    /// assert_eq!(1, db.indexes.key.read().unwrap().len());
+    /// assert_eq!(1, db.indexes.updated_at.read().unwrap().len());
+    /// assert_eq!(1, db.stats.read().unwrap().writes);
+    /// assert_eq!(1, db.values.read().unwrap().len());
+    ///
+    /// let key = "test_key2".to_string();
+    /// let value = Value::Integer(10);
+    /// let value_post = ValuePost { key: key.clone(), ttl: Some(100), value: value.clone()};
+    /// let value_response = db.try_create(value_post).unwrap().unwrap();
+    ///
+    /// assert_eq!(value_response.key, key);
+    /// assert_eq!(value_response.value, value);
+    /// assert_eq!(2, db.indexes.created_at.read().unwrap().len());
+    /// assert_eq!(1, db.indexes.delete_at.read().unwrap().len());
+    /// assert_eq!(2, db.indexes.key.read().unwrap().len());
+    /// assert_eq!(2, db.indexes.updated_at.read().unwrap().len());
+    /// assert_eq!(2, db.stats.read().unwrap().writes);
+    /// assert_eq!(2, db.values.read().unwrap().len());
+    /// ```
+    pub fn try_create(&self, value_post: ValuePost) -> Result<Option<ValueResponse>> {
+        let mut stats = self.stats.write().unwrap();
+        stats.inc_requests();
+
+        let mut values = self.values.write().unwrap();
+        let id = Uuid::new_v4();
+        let now = Utc::now();
+        let delete_at = value_post.ttl.map(|ttl| now + Duration::seconds(ttl));
+        let value_record =
+            ValueRecord::new(id, &value_post.key, &value_post.value, now, delete_at, now);
+        values.insert(id, value_record);
+        let result = values.get(&id).cloned();
+
+        match result {
+            None => Ok(None),
+            Some(result) => {
+                stats.inc_writes();
+
+                let mut created_at_index = self.indexes.created_at.write().unwrap();
+                created_at_index.insert(result.created_at.timestamp_nanos(), id);
+
+                if let Some(delete_at) = delete_at {
+                    let mut delete_at_index = self.indexes.delete_at.write().unwrap();
+                    delete_at_index.insert(delete_at.timestamp_nanos(), id);
+                }
+
+                let mut key_index = self.indexes.key.write().unwrap();
+                key_index.insert(value_post.key, id);
+
+                let mut updated_at_index = self.indexes.updated_at.write().unwrap();
+                updated_at_index.insert(result.updated_at.timestamp_nanos(), id);
+
+                Ok(Some(result.into()))
+            }
+        }
+    }
+
+    /// Tries to decrement a value of an existing record in the database using the specified key.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use alex_db_lib::{config::Config, db::Db, value_record::{Value, ValueDecrement, ValuePost}};
+    /// use std::collections::VecDeque;
+    ///
+    /// let config = Config::default();
+    /// let mut db = Db::new(config);
+    ///
+    /// assert_eq!(0, db.stats.read().unwrap().writes);
+    ///
+    /// let key = "test_key".to_string();
+    /// let value = Value::Integer(5000);
+    /// let value_post = ValuePost { key: key.clone(), ttl: None, value: value.clone()};
+    /// let value_response = db.try_create(value_post).unwrap().unwrap();
+    ///
+    /// assert_eq!(value_response.key, key);
+    /// assert_eq!(value_response.value, value);
+    /// assert_eq!(1, db.stats.read().unwrap().writes);
+    ///
+    /// let value_decrement = ValueDecrement { decrement: None };
+    /// let value_response = db.try_decrement(&key, value_decrement).unwrap().unwrap();
+    ///
+    /// assert_eq!(value_response.key, key);
+    /// assert_eq!(value_response.value, Value::Integer(4999));
+    /// assert_eq!(2, db.stats.read().unwrap().writes);
+    ///
+    /// let value_decrement = ValueDecrement { decrement: Some(10) };
+    /// let value_response = db.try_decrement(&key, value_decrement).unwrap().unwrap();
+    ///
+    /// assert_eq!(value_response.key, key);
+    /// assert_eq!(value_response.value, Value::Integer(4989));
+    /// assert_eq!(3, db.stats.read().unwrap().writes);
+    /// ```
     pub fn try_decrement(
         &self,
         key: &str,
@@ -399,7 +587,47 @@ impl Db {
         }
     }
 
-    pub fn try_delete_by_id(&self, id: Uuid) -> Result<Option<ValueResponse>> {
+    /// Tries to delete an existing record from the database using the specified key.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use alex_db_lib::{config::Config, db::Db, value_record::{Value, ValuePost}};
+    /// use std::collections::VecDeque;
+    ///
+    /// let config = Config::default();
+    /// let mut db = Db::new(config);
+    ///
+    /// assert_eq!(0, db.stats.read().unwrap().writes);
+    ///
+    /// let key = "test_key".to_string();
+    /// let value = Value::Boolean(false);
+    /// let value_post = ValuePost { key: key.clone(), ttl: None, value: value.clone()};
+    /// let value_response = db.try_create(value_post).unwrap().unwrap();
+    ///
+    /// assert_eq!(value_response.key, key);
+    /// assert_eq!(value_response.value, value);
+    /// assert_eq!(1, db.stats.read().unwrap().writes);
+    ///
+    /// let value_response = db.try_delete(&key).unwrap().unwrap();
+    ///
+    /// assert_eq!(value_response.key, key);
+    /// assert_eq!(value_response.value, value);
+    /// assert_eq!(2, db.stats.read().unwrap().writes);
+    ///
+    /// let value_response = db.try_read(&key).unwrap();
+    ///
+    /// assert!(value_response.is_none());
+    /// ```
+    pub fn try_delete(&self, key: &str) -> Result<Option<ValueResponse>> {
+        let key_index = self.indexes.key.read().unwrap();
+        let id = *key_index.get(key).unwrap();
+        drop(key_index);
+
+        self.try_delete_by_id(id)
+    }
+
+    fn try_delete_by_id(&self, id: Uuid) -> Result<Option<ValueResponse>> {
         let mut stats = self.stats.write().unwrap();
         stats.inc_requests();
 
@@ -430,14 +658,42 @@ impl Db {
         }
     }
 
-    pub fn try_delete_by_key(&self, key: &str) -> Result<Option<ValueResponse>> {
-        let key_index = self.indexes.key.read().unwrap();
-        let id = *key_index.get(key).unwrap();
-        drop(key_index);
-
-        self.try_delete_by_id(id)
-    }
-
+    /// Tries to increment a value of an existing record in the database using the specified key.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use alex_db_lib::{config::Config, db::Db, value_record::{Value, ValuePost, ValueIncrement}};
+    /// use std::collections::VecDeque;
+    ///
+    /// let config = Config::default();
+    /// let mut db = Db::new(config);
+    ///
+    /// assert_eq!(0, db.stats.read().unwrap().writes);
+    ///
+    /// let key = "test_key".to_string();
+    /// let value = Value::Integer(1000);
+    /// let value_post = ValuePost { key: key.clone(), ttl: None, value: value.clone()};
+    /// let value_response = db.try_create(value_post).unwrap().unwrap();
+    ///
+    /// assert_eq!(value_response.key, key);
+    /// assert_eq!(value_response.value, value);
+    /// assert_eq!(1, db.stats.read().unwrap().writes);
+    ///
+    /// let value_increment = ValueIncrement { increment: None };
+    /// let value_response = db.try_increment(&key, value_increment).unwrap().unwrap();
+    ///
+    /// assert_eq!(value_response.key, key);
+    /// assert_eq!(value_response.value, Value::Integer(1001));
+    /// assert_eq!(2, db.stats.read().unwrap().writes);
+    ///
+    /// let value_increment = ValueIncrement { increment: Some(10) };
+    /// let value_response = db.try_increment(&key, value_increment).unwrap().unwrap();
+    ///
+    /// assert_eq!(value_response.key, key);
+    /// assert_eq!(value_response.value, Value::Integer(1011));
+    /// assert_eq!(3, db.stats.read().unwrap().writes);
+    /// ```
     pub fn try_increment(
         &self,
         key: &str,
@@ -492,43 +748,44 @@ impl Db {
         }
     }
 
-    pub fn try_insert(&self, value_post: ValuePost) -> Result<Option<ValueResponse>> {
-        let mut stats = self.stats.write().unwrap();
-        stats.inc_requests();
-
-        let mut values = self.values.write().unwrap();
-        let id = Uuid::new_v4();
-        let now = Utc::now();
-        let delete_at = value_post.ttl.map(|ttl| now + Duration::seconds(ttl));
-        let value_record =
-            ValueRecord::new(id, &value_post.key, &value_post.value, now, delete_at, now);
-        values.insert(id, value_record);
-        let result = values.get(&id).cloned();
-
-        match result {
-            None => Ok(None),
-            Some(result) => {
-                stats.inc_writes();
-
-                let mut created_at_index = self.indexes.created_at.write().unwrap();
-                created_at_index.insert(result.created_at.timestamp_nanos(), id);
-
-                if let Some(delete_at) = delete_at {
-                    let mut delete_at_index = self.indexes.delete_at.write().unwrap();
-                    delete_at_index.insert(delete_at.timestamp_nanos(), id);
-                }
-
-                let mut key_index = self.indexes.key.write().unwrap();
-                key_index.insert(value_post.key, id);
-
-                let mut updated_at_index = self.indexes.updated_at.write().unwrap();
-                updated_at_index.insert(result.updated_at.timestamp_nanos(), id);
-
-                Ok(Some(result.into()))
-            }
-        }
-    }
-
+    /// Tries to pop a value from the back of an existing record in the database using the specified key.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use alex_db_lib::{config::Config, db::Db, value_record::{Value, ValuePopBack, ValuePost}};
+    /// use std::collections::VecDeque;
+    ///
+    /// let config = Config::default();
+    /// let mut db = Db::new(config);
+    ///
+    /// assert_eq!(0, db.stats.read().unwrap().writes);
+    ///
+    /// let key = "test_key".to_string();
+    /// let value1 = Value::String("test_value1".to_string());
+    /// let value2 = Value::String("test_value2".to_string());
+    /// let value3 = Value::Integer(100);
+    /// let value4 = Value::Integer(1000);
+    /// let value_array = Value::Array(VecDeque::from([value1.clone(), value2.clone(), value3.clone(), value4.clone()]));
+    /// let value_post = ValuePost { key: key.clone(), ttl: None, value: value_array.clone() };
+    /// let value_response = db.try_create(value_post).unwrap().unwrap();
+    ///
+    /// assert_eq!(value_response.key, key);
+    /// assert_eq!(value_response.value, value_array);
+    /// assert_eq!(1, db.stats.read().unwrap().writes);
+    ///
+    /// let value_pop_back = ValuePopBack { pop_back: None };
+    /// let value_response = db.try_pop_back(&key, value_pop_back).unwrap().unwrap();
+    ///
+    /// assert_eq!(value_response, vec![value4]);
+    /// assert_eq!(2, db.stats.read().unwrap().writes);
+    ///
+    /// let value_pop_back = ValuePopBack { pop_back: Some(2) };
+    /// let value_response = db.try_pop_back(&key, value_pop_back).unwrap().unwrap();
+    ///
+    /// assert_eq!(value_response, vec![value3, value2]);
+    /// assert_eq!(3, db.stats.read().unwrap().writes);
+    /// ```
     pub fn try_pop_back(
         &self,
         key: &str,
@@ -601,6 +858,44 @@ impl Db {
         }
     }
 
+    /// Tries to pop a value from the front of an existing record in the database using the specified key.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use alex_db_lib::{config::Config, db::Db, value_record::{Value, ValuePopFront, ValuePost}};
+    /// use std::collections::VecDeque;
+    ///
+    /// let config = Config::default();
+    /// let mut db = Db::new(config);
+    ///
+    /// assert_eq!(0, db.stats.read().unwrap().writes);
+    ///
+    /// let key = "test_key".to_string();
+    /// let value1 = Value::String("test_value1".to_string());
+    /// let value2 = Value::String("test_value2".to_string());
+    /// let value3 = Value::Integer(100);
+    /// let value4 = Value::Integer(1000);
+    /// let value_array = Value::Array(VecDeque::from([value1.clone(), value2.clone(), value3.clone(), value4.clone()]));
+    /// let value_post = ValuePost { key: key.clone(), ttl: None, value: value_array.clone() };
+    /// let value_response = db.try_create(value_post).unwrap().unwrap();
+    ///
+    /// assert_eq!(value_response.key, key);
+    /// assert_eq!(value_response.value, value_array);
+    /// assert_eq!(1, db.stats.read().unwrap().writes);
+    ///
+    /// let value_pop_front = ValuePopFront { pop_front: None };
+    /// let value_response = db.try_pop_front(&key, value_pop_front).unwrap().unwrap();
+    ///
+    /// assert_eq!(value_response, vec![value1]);
+    /// assert_eq!(2, db.stats.read().unwrap().writes);
+    ///
+    /// let value_pop_front = ValuePopFront { pop_front: Some(2) };
+    /// let value_response = db.try_pop_front(&key, value_pop_front).unwrap().unwrap();
+    ///
+    /// assert_eq!(value_response, vec![value2, value3]);
+    /// assert_eq!(3, db.stats.read().unwrap().writes);
+    /// ```
     pub fn try_pop_front(
         &self,
         key: &str,
@@ -672,6 +967,38 @@ impl Db {
         }
     }
 
+    /// Tries to prepend a value to an existing record in the database using the specified key.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use alex_db_lib::{config::Config, db::Db, value_record::{Value, ValuePost, ValuePrepend}};
+    /// use std::collections::VecDeque;
+    ///
+    /// let config = Config::default();
+    /// let mut db = Db::new(config);
+    ///
+    /// assert_eq!(0, db.stats.read().unwrap().writes);
+    ///
+    /// let key = "test_key".to_string();
+    /// let value1 = Value::String("test_value".to_string());
+    /// let value1_array = Value::Array(VecDeque::from([value1.clone()]));
+    /// let value_post = ValuePost { key: key.clone(), ttl: None, value: value1_array.clone()};
+    /// let value_response = db.try_create(value_post).unwrap().unwrap();
+    ///
+    /// assert_eq!(value_response.key, key);
+    /// assert_eq!(value_response.value, value1_array);
+    /// assert_eq!(1, db.stats.read().unwrap().writes);
+    ///
+    /// let value2 = Value::Integer(100);
+    /// let value2_array = Value::Array(VecDeque::from([value2.clone()]));
+    /// let value_prepend = ValuePrepend { prepend: value2_array.clone()};
+    /// let value_response = db.try_prepend(&key, value_prepend).unwrap().unwrap();
+    ///
+    /// assert_eq!(value_response.key, key);
+    /// assert_eq!(value_response.value, Value::Array(VecDeque::from([value2, value1])));
+    /// assert_eq!(2, db.stats.read().unwrap().writes);
+    /// ```
     pub fn try_prepend(
         &self,
         key: &str,
@@ -725,6 +1052,28 @@ impl Db {
         }
     }
 
+    /// Tries to read a record from the database using the specified key.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use alex_db_lib::{config::Config, db::Db, value_record::{Value, ValuePost}};
+    ///
+    /// let config = Config::default();
+    /// let mut db = Db::new(config);
+    ///
+    /// assert_eq!(0, db.stats.read().unwrap().reads);
+    ///
+    /// let key = "test_key".to_string();
+    /// let value = Value::Integer(10);
+    /// let value_post = ValuePost { key: key.clone(), ttl: None, value: value.clone()};
+    /// db.try_create(value_post);
+    /// let value_response = db.try_read(&key).unwrap().unwrap();
+    ///
+    /// assert_eq!(value_response.key, key);
+    /// assert_eq!(value_response.value, value);
+    /// assert_eq!(1, db.stats.read().unwrap().reads);
+    /// ```
     pub fn try_read(&self, key: &str) -> Result<Option<ValueResponse>> {
         let mut stats = self.stats.write().unwrap();
         stats.inc_requests();
@@ -750,6 +1099,35 @@ impl Db {
         }
     }
 
+    /// Tries to update a record in the database using the specified key.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use alex_db_lib::{config::Config, db::Db, value_record::{Value, ValuePost, ValuePut}};
+    ///
+    /// let config = Config::default();
+    /// let mut db = Db::new(config);
+    ///
+    /// assert_eq!(0, db.stats.read().unwrap().writes);
+    ///
+    /// let key = "test_key".to_string();
+    /// let value = Value::String("test_value".to_string());
+    /// let value_post = ValuePost { key: key.clone(), ttl: None, value: value.clone()};
+    /// let value_response = db.try_create(value_post).unwrap().unwrap();
+    ///
+    /// assert_eq!(value_response.key, key);
+    /// assert_eq!(value_response.value, value);
+    /// assert_eq!(1, db.stats.read().unwrap().writes);
+    ///
+    /// let value = Value::Integer(100);
+    /// let value_put = ValuePut { ttl: None, value: value.clone()};
+    /// let value_response = db.try_update(&key, value_put).unwrap().unwrap();
+    ///
+    /// assert_eq!(value_response.key, key);
+    /// assert_eq!(value_response.value, value);
+    /// assert_eq!(2, db.stats.read().unwrap().writes);
+    /// ```
     pub fn try_update(&self, key: &str, value_put: ValuePut) -> Result<Option<ValueResponse>> {
         let mut stats = self.stats.write().unwrap();
         stats.inc_requests();
