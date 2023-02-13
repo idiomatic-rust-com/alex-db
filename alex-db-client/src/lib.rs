@@ -64,7 +64,13 @@ pub async fn run() -> Result<()> {
             |args, context| Box::pin(requests::values::increment(args, context)),
         )
         .with_command_async(
-            Command::new("list").display_order(7).about("List values"),
+            Command::new("list")
+                .arg(Arg::new("sort").required(false))
+                .arg(Arg::new("direction").required(false))
+                .arg(Arg::new("limit").required(false))
+                .arg(Arg::new("page").required(false))
+                .display_order(7)
+                .about("List values"),
             |args, context| Box::pin(requests::values::list(args, context)),
         )
         .with_command_async(

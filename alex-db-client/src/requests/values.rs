@@ -2,9 +2,12 @@ use crate::{
     context::Context,
     error::{ClientError, ServerError},
 };
-use alex_db_lib::value_record::{
-    Value, ValueAppend, ValueDecrement, ValueIncrement, ValuePopBack, ValuePopFront, ValuePost,
-    ValuePrepend, ValuePut, ValueResponse,
+use alex_db_lib::{
+    db::{Direction, Sort},
+    value_record::{
+        Value, ValueAppend, ValueDecrement, ValueIncrement, ValuePopBack, ValuePopFront, ValuePost,
+        ValuePrepend, ValuePut, ValueResponse,
+    },
 };
 use reedline_repl_rs::clap::ArgMatches;
 use reqwest::StatusCode;
@@ -294,14 +297,37 @@ pub async fn increment<'a>(
 }
 
 pub async fn list<'a>(
-    _args: ArgMatches,
+    args: ArgMatches,
     context: &mut Context,
 ) -> Result<Option<String>, ClientError<'a>> {
     let connection = context
         .get_default_connection()
         .ok_or(ClientError::NoActiveConnection)?;
 
-    let url = format!("{}/values", connection.address);
+    let sort = args
+        .get_one::<String>("sort")
+        .unwrap_or(&Sort::Key.into())
+        .clone();
+
+    let direction = args
+        .get_one::<String>("direction")
+        .unwrap_or(&Direction::Asc.into())
+        .clone();
+
+    let limit = match args.get_one::<String>("limit") {
+        None => 100,
+        Some(limit) => limit.parse::<usize>().unwrap_or(100),
+    };
+
+    let page = match args.get_one::<String>("page") {
+        None => 1,
+        Some(page) => page.parse::<usize>().unwrap_or(1),
+    };
+
+    let url = format!(
+        "{}/values?sort={sort}&direction={direction}&page={page}&limit={limit}",
+        connection.address
+    );
     let mut request_builder = reqwest::Client::new().get(url);
 
     request_builder = match connection.api_key {

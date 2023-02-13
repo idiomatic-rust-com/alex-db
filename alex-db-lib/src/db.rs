@@ -12,7 +12,7 @@ use crate::{
 use chrono::{Duration, Utc};
 use lz4_flex::{compress_prepend_size, decompress_size_prepended};
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, fs, path::Path, sync::RwLock};
+use std::{collections::HashMap, fs, path::Path, str::FromStr, sync::RwLock};
 use uuid::Uuid;
 
 pub const API_KEYS_FILE: &str = "api_keys.sec";
@@ -1181,6 +1181,27 @@ pub enum Direction {
     Desc,
 }
 
+impl FromStr for Direction {
+    type Err = Error;
+
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        match s {
+            "asc" => Ok(Direction::Asc),
+            "desc" => Ok(Direction::Desc),
+            _ => Ok(Direction::Asc),
+        }
+    }
+}
+
+impl From<Direction> for String {
+    fn from(direction: Direction) -> Self {
+        match direction {
+            Direction::Asc => "asc".to_string(),
+            Direction::Desc => "desc".to_string(),
+        }
+    }
+}
+
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Sort {
@@ -1188,4 +1209,29 @@ pub enum Sort {
     DeleteAt,
     Key,
     UpdatedAt,
+}
+
+impl FromStr for Sort {
+    type Err = Error;
+
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        match s {
+            "created_at" => Ok(Sort::CreatedAt),
+            "delete_at" => Ok(Sort::DeleteAt),
+            "key" => Ok(Sort::Key),
+            "updated_at" => Ok(Sort::UpdatedAt),
+            _ => Ok(Sort::Key),
+        }
+    }
+}
+
+impl From<Sort> for String {
+    fn from(sort: Sort) -> Self {
+        match sort {
+            Sort::CreatedAt => "created_at".to_string(),
+            Sort::DeleteAt => "delete_at".to_string(),
+            Sort::Key => "key".to_string(),
+            Sort::UpdatedAt => "updated_at".to_string(),
+        }
+    }
 }

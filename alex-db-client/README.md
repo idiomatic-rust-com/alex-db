@@ -69,6 +69,35 @@ Value: String("test100-value")
 Value: Boolean(true)
 ```
 
+There are additional parameters that you can use for sorting and paginating.
+
+- sort:
+  - created_at
+  - delete_at
+  - key
+  - updated_at
+- direction:
+  - asc
+  - desc
+- limit - limit of items per page
+- page - page number
+
+Execute the command
+
+```sh
+list created_at asc 2 1
+```
+
+and you will receive the result
+
+```sh
+Values list
+1) Key: test100-key
+Value: String("test100-value")
+2) Key: test101-key
+Value: Boolean(true)
+```
+
 ### Read
 
 Execute the command
