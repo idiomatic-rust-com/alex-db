@@ -225,7 +225,7 @@ impl Db {
     ///
     /// let key = "test_key".to_string();
     /// let value = Value::Boolean(true);
-    /// let value_post = ValuePost { key: key.clone(), ttl: None, value: value.clone()};
+    /// let value_post = ValuePost { key: key.clone(), ttl: None, value: value.clone() };
     /// db.try_create(value_post);
     /// let value_responses = db.list(Direction::Asc, None, None, Sort::CreatedAt).unwrap();
     ///
@@ -349,7 +349,7 @@ impl Db {
     /// let key = "test_key".to_string();
     /// let value1 = Value::String("test_value".to_string());
     /// let value1_array = Value::Array(VecDeque::from([value1.clone()]));
-    /// let value_post = ValuePost { key: key.clone(), ttl: None, value: value1_array.clone()};
+    /// let value_post = ValuePost { key: key.clone(), ttl: None, value: value1_array.clone() };
     /// let value_response = db.try_create(value_post).unwrap().unwrap();
     ///
     /// assert_eq!(value_response.key, key);
@@ -358,7 +358,7 @@ impl Db {
     ///
     /// let value2 = Value::Integer(100);
     /// let value2_array = Value::Array(VecDeque::from([value2.clone()]));
-    /// let value_append = ValueAppend { append: value2_array.clone()};
+    /// let value_append = ValueAppend { append: value2_array.clone() };
     /// let value_response = db.try_append(&key, value_append).unwrap().unwrap();
     ///
     /// assert_eq!(value_response.key, key);
@@ -434,7 +434,7 @@ impl Db {
     ///
     /// let key = "test_key1".to_string();
     /// let value = Value::String("test_value".to_string());
-    /// let value_post = ValuePost { key: key.clone(), ttl: None, value: value.clone()};
+    /// let value_post = ValuePost { key: key.clone(), ttl: None, value: value.clone() };
     /// let value_response = db.try_create(value_post).unwrap().unwrap();
     ///
     /// assert_eq!(value_response.key, key);
@@ -448,7 +448,7 @@ impl Db {
     ///
     /// let key = "test_key2".to_string();
     /// let value = Value::Integer(10);
-    /// let value_post = ValuePost { key: key.clone(), ttl: Some(100), value: value.clone()};
+    /// let value_post = ValuePost { key: key.clone(), ttl: Some(100), value: value.clone() };
     /// let value_response = db.try_create(value_post).unwrap().unwrap();
     ///
     /// assert_eq!(value_response.key, key);
@@ -512,7 +512,7 @@ impl Db {
     ///
     /// let key = "test_key".to_string();
     /// let value = Value::Integer(5000);
-    /// let value_post = ValuePost { key: key.clone(), ttl: None, value: value.clone()};
+    /// let value_post = ValuePost { key: key.clone(), ttl: None, value: value.clone() };
     /// let value_response = db.try_create(value_post).unwrap().unwrap();
     ///
     /// assert_eq!(value_response.key, key);
@@ -602,7 +602,7 @@ impl Db {
     ///
     /// let key = "test_key".to_string();
     /// let value = Value::Boolean(false);
-    /// let value_post = ValuePost { key: key.clone(), ttl: None, value: value.clone()};
+    /// let value_post = ValuePost { key: key.clone(), ttl: None, value: value.clone() };
     /// let value_response = db.try_create(value_post).unwrap().unwrap();
     ///
     /// assert_eq!(value_response.key, key);
@@ -673,7 +673,7 @@ impl Db {
     ///
     /// let key = "test_key".to_string();
     /// let value = Value::Integer(1000);
-    /// let value_post = ValuePost { key: key.clone(), ttl: None, value: value.clone()};
+    /// let value_post = ValuePost { key: key.clone(), ttl: None, value: value.clone() };
     /// let value_response = db.try_create(value_post).unwrap().unwrap();
     ///
     /// assert_eq!(value_response.key, key);
@@ -983,7 +983,7 @@ impl Db {
     /// let key = "test_key".to_string();
     /// let value1 = Value::String("test_value".to_string());
     /// let value1_array = Value::Array(VecDeque::from([value1.clone()]));
-    /// let value_post = ValuePost { key: key.clone(), ttl: None, value: value1_array.clone()};
+    /// let value_post = ValuePost { key: key.clone(), ttl: None, value: value1_array.clone() };
     /// let value_response = db.try_create(value_post).unwrap().unwrap();
     ///
     /// assert_eq!(value_response.key, key);
@@ -992,7 +992,7 @@ impl Db {
     ///
     /// let value2 = Value::Integer(100);
     /// let value2_array = Value::Array(VecDeque::from([value2.clone()]));
-    /// let value_prepend = ValuePrepend { prepend: value2_array.clone()};
+    /// let value_prepend = ValuePrepend { prepend: value2_array.clone() };
     /// let value_response = db.try_prepend(&key, value_prepend).unwrap().unwrap();
     ///
     /// assert_eq!(value_response.key, key);
@@ -1066,7 +1066,7 @@ impl Db {
     ///
     /// let key = "test_key".to_string();
     /// let value = Value::Integer(10);
-    /// let value_post = ValuePost { key: key.clone(), ttl: None, value: value.clone()};
+    /// let value_post = ValuePost { key: key.clone(), ttl: None, value: value.clone() };
     /// db.try_create(value_post);
     /// let value_response = db.try_read(&key).unwrap().unwrap();
     ///
@@ -1113,7 +1113,7 @@ impl Db {
     ///
     /// let key = "test_key".to_string();
     /// let value = Value::String("test_value".to_string());
-    /// let value_post = ValuePost { key: key.clone(), ttl: None, value: value.clone()};
+    /// let value_post = ValuePost { key: key.clone(), ttl: None, value: value.clone() };
     /// let value_response = db.try_create(value_post).unwrap().unwrap();
     ///
     /// assert_eq!(value_response.key, key);
@@ -1121,7 +1121,7 @@ impl Db {
     /// assert_eq!(1, db.stats.read().unwrap().writes);
     ///
     /// let value = Value::Integer(100);
-    /// let value_put = ValuePut { ttl: None, value: value.clone()};
+    /// let value_put = ValuePut { ttl: None, value: value.clone() };
     /// let value_response = db.try_update(&key, value_put).unwrap().unwrap();
     ///
     /// assert_eq!(value_response.key, key);
