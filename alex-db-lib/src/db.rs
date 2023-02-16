@@ -464,6 +464,13 @@ impl Db {
         let mut stats = self.stats.write().unwrap();
         stats.inc_requests();
 
+        let mut key_index = self.indexes.key.write().unwrap();
+        let existing_id = key_index.get(&value_post.key);
+
+        if existing_id.is_some() {
+            return Err(Box::new(Error::KeyExists));
+        }
+
         let mut values = self.values.write().unwrap();
         let id = Uuid::new_v4();
         let now = Utc::now();
@@ -486,7 +493,6 @@ impl Db {
                     delete_at_index.insert(delete_at.timestamp_nanos(), id);
                 }
 
-                let mut key_index = self.indexes.key.write().unwrap();
                 key_index.insert(value_post.key, id);
 
                 let mut updated_at_index = self.indexes.updated_at.write().unwrap();
