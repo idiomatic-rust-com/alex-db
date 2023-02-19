@@ -7,6 +7,6 @@ type Result<T> = std::result::Result<T, Box<dyn Error + Send + Sync>>;
 pub mod config;
 pub mod db;
 pub mod error;
-pub mod index;
 pub mod stat_record;
+pub mod value_index;
 pub mod value_record;

@@ -1,8 +1,8 @@
 use crate::{
     config::Config,
     error::Error,
-    index::Index,
     stat_record::StatRecord,
+    value_index::ValueIndex,
     value_record::{
         Value, ValueAppend, ValueDecrement, ValueIncrement, ValuePopBack, ValuePopFront, ValuePost,
         ValuePrepend, ValuePut, ValueRecord, ValueResponse,
@@ -16,19 +16,19 @@ use std::{collections::HashMap, fs, path::Path, str::FromStr, sync::RwLock};
 use uuid::Uuid;
 
 pub const API_KEYS_FILE: &str = "api_keys.sec";
-pub const CREATED_AT_INDEX_FILE: &str = "created_at.idx";
-pub const DELETE_AT_INDEX_FILE: &str = "delete_at.idx";
-pub const DATABASE_FILE: &str = "values.db";
-pub const KEY_INDEX_FILE: &str = "key.idx";
-pub const UPDATED_AT_INDEX_FILE: &str = "updated_at.idx";
+pub const VALUES_CREATED_AT_INDEX_FILE: &str = "values_created_at.idx";
+pub const VALUES_DATABASE_FILE: &str = "values.db";
+pub const VALUES_DELETE_AT_INDEX_FILE: &str = "values_delete_at.idx";
+pub const VALUES_KEY_INDEX_FILE: &str = "values_key.idx";
+pub const VALUES_UPDATED_AT_INDEX_FILE: &str = "values_updated_at.idx";
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Db {
     api_keys: RwLock<Vec<Uuid>>,
     pub config: Config,
-    pub indexes: Index,
     pub stats: RwLock<StatRecord>,
     pub values: RwLock<HashMap<Uuid, ValueRecord>>,
+    pub values_indexes: ValueIndex,
 }
 
 impl Db {
@@ -48,9 +48,9 @@ impl Db {
         Self {
             api_keys: RwLock::new(vec![]),
             config,
-            indexes: Index::default(),
             stats: RwLock::new(StatRecord::default()),
             values: RwLock::new(HashMap::new()),
+            values_indexes: ValueIndex::default(),
         }
     }
 
@@ -76,17 +76,21 @@ impl Db {
     }
 
     pub fn gc(&self) -> Result<()> {
-        let delete_at_index = self.indexes.delete_at.read().map_err(|_| Error::Lock)?;
+        let values_delete_at_index = self
+            .values_indexes
+            .delete_at
+            .read()
+            .map_err(|_| Error::Lock)?;
         let now = Utc::now();
         let mut ids = vec![];
 
-        for (key, value) in delete_at_index.iter() {
+        for (key, value) in values_delete_at_index.iter() {
             if now.timestamp_nanos() > *key {
                 ids.append(&mut vec![*value]);
             }
         }
 
-        drop(delete_at_index);
+        drop(values_delete_at_index);
 
         for id in ids {
             self.try_delete_by_id(id)?;
@@ -111,39 +115,42 @@ impl Db {
                 self.api_keys = serde_json::from_str(&serialized)?;
             }
 
-            let created_at_index_file_path = format!("{data_dir}/{CREATED_AT_INDEX_FILE}");
-            if Path::new(&created_at_index_file_path).exists() {
-                let compressed = fs::read(created_at_index_file_path)?;
+            let values_created_at_index_file_path =
+                format!("{data_dir}/{VALUES_CREATED_AT_INDEX_FILE}");
+            if Path::new(&values_created_at_index_file_path).exists() {
+                let compressed = fs::read(values_created_at_index_file_path)?;
                 let uncompressed = decompress_size_prepended(&compressed)?;
                 let serialized = String::from_utf8(uncompressed)?;
-                self.indexes.created_at = serde_json::from_str(&serialized)?;
+                self.values_indexes.created_at = serde_json::from_str(&serialized)?;
             }
 
-            let delete_at_index_file_path = format!("{data_dir}/{DELETE_AT_INDEX_FILE}");
-            if Path::new(&delete_at_index_file_path).exists() {
-                let compressed = fs::read(delete_at_index_file_path)?;
+            let values_delete_at_index_file_path =
+                format!("{data_dir}/{VALUES_DELETE_AT_INDEX_FILE}");
+            if Path::new(&values_delete_at_index_file_path).exists() {
+                let compressed = fs::read(values_delete_at_index_file_path)?;
                 let uncompressed = decompress_size_prepended(&compressed)?;
                 let serialized = String::from_utf8(uncompressed)?;
-                self.indexes.delete_at = serde_json::from_str(&serialized)?;
+                self.values_indexes.delete_at = serde_json::from_str(&serialized)?;
             }
 
-            let key_index_file_path = format!("{data_dir}/{KEY_INDEX_FILE}");
-            if Path::new(&key_index_file_path).exists() {
-                let compressed = fs::read(key_index_file_path)?;
+            let values_key_index_file_path = format!("{data_dir}/{VALUES_KEY_INDEX_FILE}");
+            if Path::new(&values_key_index_file_path).exists() {
+                let compressed = fs::read(values_key_index_file_path)?;
                 let uncompressed = decompress_size_prepended(&compressed)?;
                 let serialized = String::from_utf8(uncompressed)?;
-                self.indexes.key = serde_json::from_str(&serialized)?;
+                self.values_indexes.key = serde_json::from_str(&serialized)?;
             }
 
-            let updated_at_index_file_path = format!("{data_dir}/{UPDATED_AT_INDEX_FILE}");
-            if Path::new(&updated_at_index_file_path).exists() {
-                let compressed = fs::read(updated_at_index_file_path)?;
+            let values_updated_at_index_file_path =
+                format!("{data_dir}/{VALUES_UPDATED_AT_INDEX_FILE}");
+            if Path::new(&values_updated_at_index_file_path).exists() {
+                let compressed = fs::read(values_updated_at_index_file_path)?;
                 let uncompressed = decompress_size_prepended(&compressed)?;
                 let serialized = String::from_utf8(uncompressed)?;
-                self.indexes.updated_at = serde_json::from_str(&serialized)?;
+                self.values_indexes.updated_at = serde_json::from_str(&serialized)?;
             }
 
-            let values_file_path = format!("{data_dir}/{DATABASE_FILE}");
+            let values_file_path = format!("{data_dir}/{VALUES_DATABASE_FILE}");
             if Path::new(&values_file_path).exists() {
                 let compressed = fs::read(values_file_path)?;
                 let uncompressed = decompress_size_prepended(&compressed)?;
@@ -169,32 +176,47 @@ impl Db {
                 let compressed = compress_prepend_size(&serialized);
                 fs::write(api_keys_file_path, compressed)?;
 
-                let created_at_index = self.indexes.created_at.read().map_err(|_| Error::Lock)?;
-                let created_at_index_file_path = format!("{data_dir}/{CREATED_AT_INDEX_FILE}");
-                let serialized = serde_json::to_vec(&*created_at_index)?;
+                let values_created_at_index = self
+                    .values_indexes
+                    .created_at
+                    .read()
+                    .map_err(|_| Error::Lock)?;
+                let values_created_at_index_file_path =
+                    format!("{data_dir}/{VALUES_CREATED_AT_INDEX_FILE}");
+                let serialized = serde_json::to_vec(&*values_created_at_index)?;
                 let compressed = compress_prepend_size(&serialized);
-                fs::write(created_at_index_file_path, compressed)?;
+                fs::write(values_created_at_index_file_path, compressed)?;
 
-                let delete_at_index = self.indexes.delete_at.read().map_err(|_| Error::Lock)?;
-                let delete_at_index_file_path = format!("{data_dir}/{DELETE_AT_INDEX_FILE}");
-                let serialized = serde_json::to_vec(&*delete_at_index)?;
+                let values_delete_at_index = self
+                    .values_indexes
+                    .delete_at
+                    .read()
+                    .map_err(|_| Error::Lock)?;
+                let values_delete_at_index_file_path =
+                    format!("{data_dir}/{VALUES_DELETE_AT_INDEX_FILE}");
+                let serialized = serde_json::to_vec(&*values_delete_at_index)?;
                 let compressed = compress_prepend_size(&serialized);
-                fs::write(delete_at_index_file_path, compressed)?;
+                fs::write(values_delete_at_index_file_path, compressed)?;
 
-                let key_index = self.indexes.key.read().map_err(|_| Error::Lock)?;
-                let key_index_file_path = format!("{data_dir}/{KEY_INDEX_FILE}");
-                let serialized = serde_json::to_vec(&*key_index)?;
+                let values_key_index = self.values_indexes.key.read().map_err(|_| Error::Lock)?;
+                let values_key_index_file_path = format!("{data_dir}/{VALUES_KEY_INDEX_FILE}");
+                let serialized = serde_json::to_vec(&*values_key_index)?;
                 let compressed = compress_prepend_size(&serialized);
-                fs::write(key_index_file_path, compressed)?;
+                fs::write(values_key_index_file_path, compressed)?;
 
-                let updated_at_index = self.indexes.updated_at.read().map_err(|_| Error::Lock)?;
-                let updated_at_index_file_path = format!("{data_dir}/{UPDATED_AT_INDEX_FILE}");
-                let serialized = serde_json::to_vec(&*updated_at_index)?;
+                let values_updated_at_index = self
+                    .values_indexes
+                    .updated_at
+                    .read()
+                    .map_err(|_| Error::Lock)?;
+                let values_updated_at_index_file_path =
+                    format!("{data_dir}/{VALUES_UPDATED_AT_INDEX_FILE}");
+                let serialized = serde_json::to_vec(&*values_updated_at_index)?;
                 let compressed = compress_prepend_size(&serialized);
-                fs::write(updated_at_index_file_path, compressed)?;
+                fs::write(values_updated_at_index_file_path, compressed)?;
 
                 let values = self.values.read().map_err(|_| Error::Lock)?;
-                let values_file_path = format!("{data_dir}/{DATABASE_FILE}");
+                let values_file_path = format!("{data_dir}/{VALUES_DATABASE_FILE}");
                 let serialized = serde_json::to_vec(&*values)?;
                 let compressed = compress_prepend_size(&serialized);
                 fs::write(values_file_path, compressed)?;
@@ -248,64 +270,76 @@ impl Db {
 
         match sort {
             Sort::CreatedAt => {
-                let created_at_index = self.indexes.created_at.read().map_err(|_| Error::Lock)?;
+                let values_created_at_index = self
+                    .values_indexes
+                    .created_at
+                    .read()
+                    .map_err(|_| Error::Lock)?;
 
                 match direction {
                     Direction::Asc => {
-                        for (_key, value) in created_at_index.iter() {
+                        for (_key, value) in values_created_at_index.iter() {
                             ids.append(&mut vec![*value]);
                         }
                     }
                     Direction::Desc => {
-                        for (_key, value) in created_at_index.iter().rev() {
+                        for (_key, value) in values_created_at_index.iter().rev() {
                             ids.append(&mut vec![*value]);
                         }
                     }
                 }
             }
             Sort::DeleteAt => {
-                let delete_at_index = self.indexes.delete_at.read().map_err(|_| Error::Lock)?;
+                let values_delete_at_index = self
+                    .values_indexes
+                    .delete_at
+                    .read()
+                    .map_err(|_| Error::Lock)?;
 
                 match direction {
                     Direction::Asc => {
-                        for (_key, value) in delete_at_index.iter() {
+                        for (_key, value) in values_delete_at_index.iter() {
                             ids.append(&mut vec![*value]);
                         }
                     }
                     Direction::Desc => {
-                        for (_key, value) in delete_at_index.iter().rev() {
+                        for (_key, value) in values_delete_at_index.iter().rev() {
                             ids.append(&mut vec![*value]);
                         }
                     }
                 }
             }
             Sort::Key => {
-                let key_index = self.indexes.key.read().map_err(|_| Error::Lock)?;
+                let values_key_index = self.values_indexes.key.read().map_err(|_| Error::Lock)?;
 
                 match direction {
                     Direction::Asc => {
-                        for (_key, value) in key_index.iter() {
+                        for (_key, value) in values_key_index.iter() {
                             ids.append(&mut vec![*value]);
                         }
                     }
                     Direction::Desc => {
-                        for (_key, value) in key_index.iter().rev() {
+                        for (_key, value) in values_key_index.iter().rev() {
                             ids.append(&mut vec![*value]);
                         }
                     }
                 }
             }
             Sort::UpdatedAt => {
-                let updated_at_index = self.indexes.updated_at.read().map_err(|_| Error::Lock)?;
+                let values_updated_at_index = self
+                    .values_indexes
+                    .updated_at
+                    .read()
+                    .map_err(|_| Error::Lock)?;
 
                 match direction {
                     Direction::Asc => {
-                        for (_key, value) in updated_at_index.iter() {
+                        for (_key, value) in values_updated_at_index.iter() {
                             ids.append(&mut vec![*value]);
                         }
                     }
                     Direction::Desc => {
-                        for (_key, value) in updated_at_index.iter().rev() {
+                        for (_key, value) in values_updated_at_index.iter().rev() {
                             ids.append(&mut vec![*value]);
                         }
                     }
@@ -377,8 +411,8 @@ impl Db {
         let mut stats = self.stats.write().map_err(|_| Error::Lock)?;
         stats.inc_requests();
 
-        let key_index = self.indexes.key.write().map_err(|_| Error::Lock)?;
-        let id = *key_index.get(key).ok_or(Error::NotFound)?;
+        let values_key_index = self.values_indexes.key.write().map_err(|_| Error::Lock)?;
+        let id = *values_key_index.get(key).ok_or(Error::NotFound)?;
 
         let mut values = self.values.write().map_err(|_| Error::Lock)?;
         let original_value = values.get(&id).ok_or(Error::NotFound)?.clone();
@@ -410,10 +444,13 @@ impl Db {
             Some(result) => {
                 stats.inc_writes();
 
-                let mut updated_at_index =
-                    self.indexes.updated_at.write().map_err(|_| Error::Lock)?;
-                updated_at_index.remove(&original_value.updated_at.timestamp_nanos());
-                updated_at_index.insert(result.updated_at.timestamp_nanos(), id);
+                let mut values_updated_at_index = self
+                    .values_indexes
+                    .updated_at
+                    .write()
+                    .map_err(|_| Error::Lock)?;
+                values_updated_at_index.remove(&original_value.updated_at.timestamp_nanos());
+                values_updated_at_index.insert(result.updated_at.timestamp_nanos(), id);
 
                 Ok(Some(result.into()))
             }
@@ -430,10 +467,10 @@ impl Db {
     /// let config = Config::default();
     /// let mut db = Db::new(config);
     ///
-    /// assert_eq!(0, db.indexes.created_at.read().unwrap().len());
-    /// assert_eq!(0, db.indexes.delete_at.read().unwrap().len());
-    /// assert_eq!(0, db.indexes.key.read().unwrap().len());
-    /// assert_eq!(0, db.indexes.updated_at.read().unwrap().len());
+    /// assert_eq!(0, db.values_indexes.created_at.read().unwrap().len());
+    /// assert_eq!(0, db.values_indexes.delete_at.read().unwrap().len());
+    /// assert_eq!(0, db.values_indexes.key.read().unwrap().len());
+    /// assert_eq!(0, db.values_indexes.updated_at.read().unwrap().len());
     /// assert_eq!(0, db.stats.read().unwrap().writes);
     /// assert_eq!(0, db.values.read().unwrap().len());
     ///
@@ -444,10 +481,10 @@ impl Db {
     ///
     /// assert_eq!(value_response.key, key);
     /// assert_eq!(value_response.value, value);
-    /// assert_eq!(1, db.indexes.created_at.read().unwrap().len());
-    /// assert_eq!(0, db.indexes.delete_at.read().unwrap().len());
-    /// assert_eq!(1, db.indexes.key.read().unwrap().len());
-    /// assert_eq!(1, db.indexes.updated_at.read().unwrap().len());
+    /// assert_eq!(1, db.values_indexes.created_at.read().unwrap().len());
+    /// assert_eq!(0, db.values_indexes.delete_at.read().unwrap().len());
+    /// assert_eq!(1, db.values_indexes.key.read().unwrap().len());
+    /// assert_eq!(1, db.values_indexes.updated_at.read().unwrap().len());
     /// assert_eq!(1, db.stats.read().unwrap().writes);
     /// assert_eq!(1, db.values.read().unwrap().len());
     ///
@@ -458,10 +495,10 @@ impl Db {
     ///
     /// assert_eq!(value_response.key, key);
     /// assert_eq!(value_response.value, value);
-    /// assert_eq!(2, db.indexes.created_at.read().unwrap().len());
-    /// assert_eq!(1, db.indexes.delete_at.read().unwrap().len());
-    /// assert_eq!(2, db.indexes.key.read().unwrap().len());
-    /// assert_eq!(2, db.indexes.updated_at.read().unwrap().len());
+    /// assert_eq!(2, db.values_indexes.created_at.read().unwrap().len());
+    /// assert_eq!(1, db.values_indexes.delete_at.read().unwrap().len());
+    /// assert_eq!(2, db.values_indexes.key.read().unwrap().len());
+    /// assert_eq!(2, db.values_indexes.updated_at.read().unwrap().len());
     /// assert_eq!(2, db.stats.read().unwrap().writes);
     /// assert_eq!(2, db.values.read().unwrap().len());
     ///
@@ -473,8 +510,8 @@ impl Db {
         let mut stats = self.stats.write().map_err(|_| Error::Lock)?;
         stats.inc_requests();
 
-        let mut key_index = self.indexes.key.write().map_err(|_| Error::Lock)?;
-        let existing_id = key_index.get(&value_post.key);
+        let mut values_key_index = self.values_indexes.key.write().map_err(|_| Error::Lock)?;
+        let existing_id = values_key_index.get(&value_post.key);
 
         if existing_id.is_some() {
             return Err(Box::new(Error::KeyExists));
@@ -494,21 +531,30 @@ impl Db {
             Some(result) => {
                 stats.inc_writes();
 
-                let mut created_at_index =
-                    self.indexes.created_at.write().map_err(|_| Error::Lock)?;
-                created_at_index.insert(result.created_at.timestamp_nanos(), id);
+                let mut values_created_at_index = self
+                    .values_indexes
+                    .created_at
+                    .write()
+                    .map_err(|_| Error::Lock)?;
+                values_created_at_index.insert(result.created_at.timestamp_nanos(), id);
 
                 if let Some(delete_at) = delete_at {
-                    let mut delete_at_index =
-                        self.indexes.delete_at.write().map_err(|_| Error::Lock)?;
-                    delete_at_index.insert(delete_at.timestamp_nanos(), id);
+                    let mut values_delete_at_index = self
+                        .values_indexes
+                        .delete_at
+                        .write()
+                        .map_err(|_| Error::Lock)?;
+                    values_delete_at_index.insert(delete_at.timestamp_nanos(), id);
                 }
 
-                key_index.insert(value_post.key, id);
+                values_key_index.insert(value_post.key, id);
 
-                let mut updated_at_index =
-                    self.indexes.updated_at.write().map_err(|_| Error::Lock)?;
-                updated_at_index.insert(result.updated_at.timestamp_nanos(), id);
+                let mut values_updated_at_index = self
+                    .values_indexes
+                    .updated_at
+                    .write()
+                    .map_err(|_| Error::Lock)?;
+                values_updated_at_index.insert(result.updated_at.timestamp_nanos(), id);
 
                 Ok(Some(result.into()))
             }
@@ -563,8 +609,8 @@ impl Db {
         let mut stats = self.stats.write().map_err(|_| Error::Lock)?;
         stats.inc_requests();
 
-        let key_index = self.indexes.key.write().map_err(|_| Error::Lock)?;
-        let id = *key_index.get(key).ok_or(Error::NotFound)?;
+        let values_key_index = self.values_indexes.key.write().map_err(|_| Error::Lock)?;
+        let id = *values_key_index.get(key).ok_or(Error::NotFound)?;
 
         let mut values = self.values.write().map_err(|_| Error::Lock)?;
         let original_value = values.get(&id).ok_or(Error::NotFound)?.clone();
@@ -600,10 +646,13 @@ impl Db {
             Some(result) => {
                 stats.inc_writes();
 
-                let mut updated_at_index =
-                    self.indexes.updated_at.write().map_err(|_| Error::Lock)?;
-                updated_at_index.remove(&original_value.updated_at.timestamp_nanos());
-                updated_at_index.insert(result.updated_at.timestamp_nanos(), id);
+                let mut values_updated_at_index = self
+                    .values_indexes
+                    .updated_at
+                    .write()
+                    .map_err(|_| Error::Lock)?;
+                values_updated_at_index.remove(&original_value.updated_at.timestamp_nanos());
+                values_updated_at_index.insert(result.updated_at.timestamp_nanos(), id);
 
                 Ok(Some(result.into()))
             }
@@ -647,9 +696,9 @@ impl Db {
     /// assert!(value_response.is_err());
     /// ```
     pub fn try_delete(&self, key: &str) -> Result<Option<ValueResponse>> {
-        let key_index = self.indexes.key.read().map_err(|_| Error::Lock)?;
-        let id = *key_index.get(key).ok_or(Error::NotFound)?;
-        drop(key_index);
+        let values_key_index = self.values_indexes.key.read().map_err(|_| Error::Lock)?;
+        let id = *values_key_index.get(key).ok_or(Error::NotFound)?;
+        drop(values_key_index);
 
         self.try_delete_by_id(id)
     }
@@ -666,22 +715,32 @@ impl Db {
             Some(result) => {
                 stats.inc_writes();
 
-                let mut created_at_index =
-                    self.indexes.created_at.write().map_err(|_| Error::Lock)?;
-                created_at_index.remove(&result.created_at.timestamp_nanos());
+                let mut values_created_at_index = self
+                    .values_indexes
+                    .created_at
+                    .write()
+                    .map_err(|_| Error::Lock)?;
+                values_created_at_index.remove(&result.created_at.timestamp_nanos());
 
                 if let Some(delete_at) = result.delete_at {
-                    let mut delete_at_index =
-                        self.indexes.delete_at.write().map_err(|_| Error::Lock)?;
-                    delete_at_index.remove(&delete_at.timestamp_nanos());
+                    let mut values_delete_at_index = self
+                        .values_indexes
+                        .delete_at
+                        .write()
+                        .map_err(|_| Error::Lock)?;
+                    values_delete_at_index.remove(&delete_at.timestamp_nanos());
                 }
 
-                let mut key_index = self.indexes.key.write().map_err(|_| Error::Lock)?;
-                key_index.remove(&result.key);
+                let mut values_key_index =
+                    self.values_indexes.key.write().map_err(|_| Error::Lock)?;
+                values_key_index.remove(&result.key);
 
-                let mut updated_at_index =
-                    self.indexes.updated_at.write().map_err(|_| Error::Lock)?;
-                updated_at_index.remove(&result.updated_at.timestamp_nanos());
+                let mut values_updated_at_index = self
+                    .values_indexes
+                    .updated_at
+                    .write()
+                    .map_err(|_| Error::Lock)?;
+                values_updated_at_index.remove(&result.updated_at.timestamp_nanos());
 
                 Ok(Some(result.into()))
             }
@@ -736,8 +795,8 @@ impl Db {
         let mut stats = self.stats.write().map_err(|_| Error::Lock)?;
         stats.inc_requests();
 
-        let key_index = self.indexes.key.write().map_err(|_| Error::Lock)?;
-        let id = *key_index.get(key).ok_or(Error::NotFound)?;
+        let values_key_index = self.values_indexes.key.write().map_err(|_| Error::Lock)?;
+        let id = *values_key_index.get(key).ok_or(Error::NotFound)?;
 
         let mut values = self.values.write().map_err(|_| Error::Lock)?;
         let original_value = values.get(&id).ok_or(Error::NotFound)?.clone();
@@ -773,10 +832,13 @@ impl Db {
             Some(result) => {
                 stats.inc_writes();
 
-                let mut updated_at_index =
-                    self.indexes.updated_at.write().map_err(|_| Error::Lock)?;
-                updated_at_index.remove(&original_value.updated_at.timestamp_nanos());
-                updated_at_index.insert(result.updated_at.timestamp_nanos(), id);
+                let mut values_updated_at_index = self
+                    .values_indexes
+                    .updated_at
+                    .write()
+                    .map_err(|_| Error::Lock)?;
+                values_updated_at_index.remove(&original_value.updated_at.timestamp_nanos());
+                values_updated_at_index.insert(result.updated_at.timestamp_nanos(), id);
 
                 Ok(Some(result.into()))
             }
@@ -833,8 +895,8 @@ impl Db {
         let mut stats = self.stats.write().map_err(|_| Error::Lock)?;
         stats.inc_requests();
 
-        let key_index = self.indexes.key.write().map_err(|_| Error::Lock)?;
-        let id = *key_index.get(key).ok_or(Error::NotFound)?;
+        let values_key_index = self.values_indexes.key.write().map_err(|_| Error::Lock)?;
+        let id = *values_key_index.get(key).ok_or(Error::NotFound)?;
 
         let mut values = self.values.write().map_err(|_| Error::Lock)?;
         let original_value = values.get(&id).ok_or(Error::NotFound)?.clone();
@@ -888,10 +950,13 @@ impl Db {
             Some(result) => {
                 stats.inc_writes();
 
-                let mut updated_at_index =
-                    self.indexes.updated_at.write().map_err(|_| Error::Lock)?;
-                updated_at_index.remove(&original_value.updated_at.timestamp_nanos());
-                updated_at_index.insert(result.updated_at.timestamp_nanos(), id);
+                let mut values_updated_at_index = self
+                    .values_indexes
+                    .updated_at
+                    .write()
+                    .map_err(|_| Error::Lock)?;
+                values_updated_at_index.remove(&original_value.updated_at.timestamp_nanos());
+                values_updated_at_index.insert(result.updated_at.timestamp_nanos(), id);
 
                 Ok(Some(return_values))
             }
@@ -948,8 +1013,8 @@ impl Db {
         let mut stats = self.stats.write().map_err(|_| Error::Lock)?;
         stats.inc_requests();
 
-        let key_index = self.indexes.key.write().map_err(|_| Error::Lock)?;
-        let id = *key_index.get(key).ok_or(Error::NotFound)?;
+        let values_key_index = self.values_indexes.key.write().map_err(|_| Error::Lock)?;
+        let id = *values_key_index.get(key).ok_or(Error::NotFound)?;
 
         let mut values = self.values.write().map_err(|_| Error::Lock)?;
         let original_value = values.get(&id).ok_or(Error::NotFound)?.clone();
@@ -1002,10 +1067,13 @@ impl Db {
             Some(result) => {
                 stats.inc_writes();
 
-                let mut updated_at_index =
-                    self.indexes.updated_at.write().map_err(|_| Error::Lock)?;
-                updated_at_index.remove(&original_value.updated_at.timestamp_nanos());
-                updated_at_index.insert(result.updated_at.timestamp_nanos(), id);
+                let mut values_updated_at_index = self
+                    .values_indexes
+                    .updated_at
+                    .write()
+                    .map_err(|_| Error::Lock)?;
+                values_updated_at_index.remove(&original_value.updated_at.timestamp_nanos());
+                values_updated_at_index.insert(result.updated_at.timestamp_nanos(), id);
 
                 Ok(Some(return_values))
             }
@@ -1056,8 +1124,8 @@ impl Db {
         let mut stats = self.stats.write().map_err(|_| Error::Lock)?;
         stats.inc_requests();
 
-        let key_index = self.indexes.key.write().map_err(|_| Error::Lock)?;
-        let id = *key_index.get(key).ok_or(Error::NotFound)?;
+        let values_key_index = self.values_indexes.key.write().map_err(|_| Error::Lock)?;
+        let id = *values_key_index.get(key).ok_or(Error::NotFound)?;
 
         let mut values = self.values.write().map_err(|_| Error::Lock)?;
         let original_value = values.get(&id).ok_or(Error::NotFound)?.clone();
@@ -1092,10 +1160,13 @@ impl Db {
             Some(result) => {
                 stats.inc_writes();
 
-                let mut updated_at_index =
-                    self.indexes.updated_at.write().map_err(|_| Error::Lock)?;
-                updated_at_index.remove(&original_value.updated_at.timestamp_nanos());
-                updated_at_index.insert(result.updated_at.timestamp_nanos(), id);
+                let mut values_updated_at_index = self
+                    .values_indexes
+                    .updated_at
+                    .write()
+                    .map_err(|_| Error::Lock)?;
+                values_updated_at_index.remove(&original_value.updated_at.timestamp_nanos());
+                values_updated_at_index.insert(result.updated_at.timestamp_nanos(), id);
 
                 Ok(Some(result.into()))
             }
@@ -1128,8 +1199,8 @@ impl Db {
         let mut stats = self.stats.write().map_err(|_| Error::Lock)?;
         stats.inc_requests();
 
-        let key_index = self.indexes.key.read().map_err(|_| Error::Lock)?;
-        let id = key_index.get(key);
+        let values_key_index = self.values_indexes.key.read().map_err(|_| Error::Lock)?;
+        let id = values_key_index.get(key);
 
         match id {
             None => Ok(None),
@@ -1186,8 +1257,8 @@ impl Db {
         let mut stats = self.stats.write().map_err(|_| Error::Lock)?;
         stats.inc_requests();
 
-        let key_index = self.indexes.key.read().map_err(|_| Error::Lock)?;
-        let id = *key_index.get(key).ok_or(Error::NotFound)?;
+        let values_key_index = self.values_indexes.key.read().map_err(|_| Error::Lock)?;
+        let id = *values_key_index.get(key).ok_or(Error::NotFound)?;
 
         let mut values = self.values.write().map_err(|_| Error::Lock)?;
         let original_value = values.get(&id).ok_or(Error::NotFound)?.clone();
@@ -1210,19 +1281,25 @@ impl Db {
             Some(result) => {
                 stats.inc_writes();
 
-                let mut delete_at_index =
-                    self.indexes.delete_at.write().map_err(|_| Error::Lock)?;
+                let mut values_delete_at_index = self
+                    .values_indexes
+                    .delete_at
+                    .write()
+                    .map_err(|_| Error::Lock)?;
                 if let Some(original_value_delete_at) = original_value.delete_at {
-                    delete_at_index.remove(&original_value_delete_at.timestamp_nanos());
+                    values_delete_at_index.remove(&original_value_delete_at.timestamp_nanos());
                 }
                 if let Some(delete_at) = delete_at {
-                    delete_at_index.insert(delete_at.timestamp_nanos(), id);
+                    values_delete_at_index.insert(delete_at.timestamp_nanos(), id);
                 }
 
-                let mut updated_at_index =
-                    self.indexes.updated_at.write().map_err(|_| Error::Lock)?;
-                updated_at_index.remove(&original_value.updated_at.timestamp_nanos());
-                updated_at_index.insert(result.updated_at.timestamp_nanos(), id);
+                let mut values_updated_at_index = self
+                    .values_indexes
+                    .updated_at
+                    .write()
+                    .map_err(|_| Error::Lock)?;
+                values_updated_at_index.remove(&original_value.updated_at.timestamp_nanos());
+                values_updated_at_index.insert(result.updated_at.timestamp_nanos(), id);
 
                 Ok(Some(result.into()))
             }
