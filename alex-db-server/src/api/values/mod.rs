@@ -76,7 +76,6 @@ pub async fn append(
         (status = 201, description = "Value created.", body = ValueResponse),
         (status = 401, description = "Unauthorized request.", body = ResponseError),
         (status = 409, description = "Conflicting request.", body = ResponseError),
-        (status = 422, description = "Unprocessable entity."),
     ),
     security(
         (),
@@ -190,6 +189,7 @@ pub async fn delete(
         (status = 401, description = "Unauthorized request.", body = ResponseError),
         (status = 404, description = "Value not found by key.", body = ResponseError),
         (status = 409, description = "Conflicting request.", body = ResponseError),
+        (status = 422, description = "Unprocessable entity."),
     ),
     security(
         (),
@@ -405,7 +405,6 @@ pub async fn read(
         (status = 200, description = "Value updated.", body = ValueResponse),
         (status = 401, description = "Unauthorized request.", body = ResponseError),
         (status = 404, description = "Value not found by key.", body = ResponseError),
-        (status = 422, description = "Unprocessable entity."),
     ),
     security(
         (),

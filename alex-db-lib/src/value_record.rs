@@ -12,12 +12,13 @@ lazy_static! {
     static ref VALID_KEY: Regex = Regex::new(r"^[a-zA-Z0-9._~!$&'()*+,;=:@/?-]+$").unwrap();
 }
 
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize, ToSchema)]
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize, ToSchema)]
 #[serde(untagged)]
 pub enum Value {
     Array(VecDeque<Value>),
     Boolean(bool),
     Integer(i64),
+    Float(f64),
     String(String),
 }
 

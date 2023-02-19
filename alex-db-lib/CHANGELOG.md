@@ -4,6 +4,10 @@
 
 ### Added
 
+- Benchmarks
+- Floats support
+- Better error handling
+- Restructure indexes
 - Examples
 
 ## 0.1.0 (2023-02-14)
