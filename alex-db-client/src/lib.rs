@@ -105,11 +105,26 @@ pub async fn run() -> Result<()> {
             |args, context| Box::pin(requests::values::read(args, context)),
         )
         .with_command_async(
+            Command::new("test_create")
+                .arg(Arg::new("number").required(true))
+                .arg(Arg::new("ttl").required(false))
+                .display_order(12)
+                .about("Create test values"),
+            |args, context| Box::pin(requests::values::test_create(args, context)),
+        )
+        .with_command_async(
+            Command::new("test_delete")
+                .arg(Arg::new("number").required(true))
+                .display_order(13)
+                .about("Delete test values"),
+            |args, context| Box::pin(requests::values::test_delete(args, context)),
+        )
+        .with_command_async(
             Command::new("update")
                 .arg(Arg::new("key").required(true))
                 .arg(Arg::new("value").required(true))
                 .arg(Arg::new("ttl").required(false))
-                .display_order(12)
+                .display_order(14)
                 .about("Update value"),
             |args, context| Box::pin(requests::values::update(args, context)),
         );

@@ -9,6 +9,10 @@ use alex_db_lib::{
         ValuePrepend, ValuePut, ValueResponse,
     },
 };
+use fake::{
+    faker::lorem::en::Paragraph,
+    Fake,
+};
 use reedline_repl_rs::clap::ArgMatches;
 use reqwest::StatusCode;
 use std::{collections::VecDeque, str::FromStr};
@@ -586,6 +590,99 @@ pub async fn read<'a>(
             Ok(Some(response))
         }
     }
+}
+
+pub async fn test_create<'a>(
+    args: ArgMatches,
+    context: &mut Context,
+) -> Result<Option<String>, ClientError<'a>> {
+    let connection = context
+        .get_default_connection()
+        .ok_or(ClientError::NoActiveConnection)?;
+
+    let mut number = match args.get_one::<String>("number") {
+        None => 16000,
+        Some(number) => match number.parse::<usize>() {
+            Err(_) => 16000,
+            Ok(number) => number,
+        },
+    };
+
+    if number == 0 {
+        number = 16000;
+    };
+
+    for i in 0..number {
+        let key = format!("test{i}");
+
+        let value = Paragraph(2..50).fake::<String>();
+        let value = Value::from_str(&value)?;
+
+        let ttl = match args.get_one::<String>("ttl") {
+            None => None,
+            Some(ttl) => match ttl.parse::<i64>() {
+                Err(_) => None,
+                Ok(ttl) => Some(ttl),
+            },
+        };
+
+        let value_post = ValuePost {
+            key,
+            ttl,
+            value,
+        };
+
+        let url = format!("{}/values", connection.address);
+
+        let mut request_builder = reqwest::Client::new().post(url).json(&value_post);
+
+        request_builder = match connection.api_key {
+            None => request_builder,
+            Some(api_key) => request_builder.header("X-Auth-Token", api_key.to_string()),
+        };
+
+        request_builder.send().await?.text().await?;
+    }
+
+    Ok(Some(format!("{number} values created")))
+}
+
+pub async fn test_delete<'a>(
+    args: ArgMatches,
+    context: &mut Context,
+) -> Result<Option<String>, ClientError<'a>> {
+    let connection = context
+        .get_default_connection()
+        .ok_or(ClientError::NoActiveConnection)?;
+
+    let mut number = match args.get_one::<String>("number") {
+        None => 16000,
+        Some(number) => match number.parse::<usize>() {
+            Err(_) => 16000,
+            Ok(number) => number,
+        },
+    };
+
+    if number == 0 {
+        number = 16000;
+    };
+
+    for i in 0..number {
+        let key = format!("test{i}");
+
+        let url = format!("{}/values/{key}", connection.address);
+
+        let mut request_builder = reqwest::Client::new().delete(url);
+
+        request_builder = match connection.api_key {
+            None => request_builder,
+            Some(api_key) => request_builder.header("X-Auth-Token", api_key.to_string()),
+        };
+
+        request_builder.send().await?;
+    }
+
+    Ok(Some(format!("{number} values deleted")))
 }
 
 pub async fn update<'a>(
