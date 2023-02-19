@@ -3,6 +3,7 @@ use std::fmt;
 #[derive(Debug)]
 pub enum Error {
     KeyExists,
+    Lock,
     NotFound,
     ValueParse,
 }
@@ -14,6 +15,7 @@ impl fmt::Display for Error {
         use Error::*;
         match self {
             KeyExists => write!(f, "Key already exists."),
+            Lock => write!(f, "Problem with the lock."),
             NotFound => write!(f, "Not found."),
             ValueParse => write!(f, "Problem with parsing value."),
         }

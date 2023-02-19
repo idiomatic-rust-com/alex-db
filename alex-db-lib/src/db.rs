@@ -55,7 +55,7 @@ impl Db {
     }
 
     pub fn api_key_exists(&self, api_key: Uuid) -> Result<bool> {
-        let api_keys = self.api_keys.read().unwrap();
+        let api_keys = self.api_keys.read().map_err(|_| Error::Lock)?;
 
         let result = api_keys.contains(&api_key);
 
@@ -63,7 +63,7 @@ impl Db {
     }
 
     pub fn api_key_init(&self) -> Result<Option<Uuid>> {
-        let mut api_keys = self.api_keys.write().unwrap();
+        let mut api_keys = self.api_keys.write().map_err(|_| Error::Lock)?;
 
         if api_keys.is_empty() {
             let api_key = Uuid::new_v4();
@@ -76,7 +76,7 @@ impl Db {
     }
 
     pub fn gc(&self) -> Result<()> {
-        let delete_at_index = self.indexes.delete_at.read().unwrap();
+        let delete_at_index = self.indexes.delete_at.read().map_err(|_| Error::Lock)?;
         let now = Utc::now();
         let mut ids = vec![];
 
@@ -96,7 +96,7 @@ impl Db {
     }
 
     pub fn get_stats(&self) -> Result<StatRecord> {
-        let stats = self.stats.read().unwrap().to_owned();
+        let stats = self.stats.read().map_err(|_| Error::Lock)?.to_owned();
 
         Ok(stats)
     }
@@ -157,43 +157,43 @@ impl Db {
 
     pub fn save(&self) -> Result<()> {
         if let Some(data_dir) = &self.config.data_dir {
-            let mut stats = self.stats.write().unwrap();
+            let mut stats = self.stats.write().map_err(|_| Error::Lock)?;
 
             if stats.can_save(
                 self.config.save_triggered_after_ms,
                 self.config.save_triggered_by_threshold,
             ) {
-                let api_keys = self.api_keys.read().unwrap().to_owned();
+                let api_keys = self.api_keys.read().map_err(|_| Error::Lock)?.to_owned();
                 let api_keys_file_path = format!("{data_dir}/{API_KEYS_FILE}");
                 let serialized = serde_json::to_vec(&*api_keys)?;
                 let compressed = compress_prepend_size(&serialized);
                 fs::write(api_keys_file_path, compressed)?;
 
-                let created_at_index = self.indexes.created_at.read().unwrap();
+                let created_at_index = self.indexes.created_at.read().map_err(|_| Error::Lock)?;
                 let created_at_index_file_path = format!("{data_dir}/{CREATED_AT_INDEX_FILE}");
                 let serialized = serde_json::to_vec(&*created_at_index)?;
                 let compressed = compress_prepend_size(&serialized);
                 fs::write(created_at_index_file_path, compressed)?;
 
-                let delete_at_index = self.indexes.delete_at.read().unwrap();
+                let delete_at_index = self.indexes.delete_at.read().map_err(|_| Error::Lock)?;
                 let delete_at_index_file_path = format!("{data_dir}/{DELETE_AT_INDEX_FILE}");
                 let serialized = serde_json::to_vec(&*delete_at_index)?;
                 let compressed = compress_prepend_size(&serialized);
                 fs::write(delete_at_index_file_path, compressed)?;
 
-                let key_index = self.indexes.key.read().unwrap();
+                let key_index = self.indexes.key.read().map_err(|_| Error::Lock)?;
                 let key_index_file_path = format!("{data_dir}/{KEY_INDEX_FILE}");
                 let serialized = serde_json::to_vec(&*key_index)?;
                 let compressed = compress_prepend_size(&serialized);
                 fs::write(key_index_file_path, compressed)?;
 
-                let updated_at_index = self.indexes.updated_at.read().unwrap();
+                let updated_at_index = self.indexes.updated_at.read().map_err(|_| Error::Lock)?;
                 let updated_at_index_file_path = format!("{data_dir}/{UPDATED_AT_INDEX_FILE}");
                 let serialized = serde_json::to_vec(&*updated_at_index)?;
                 let compressed = compress_prepend_size(&serialized);
                 fs::write(updated_at_index_file_path, compressed)?;
 
-                let values = self.values.read().unwrap();
+                let values = self.values.read().map_err(|_| Error::Lock)?;
                 let values_file_path = format!("{data_dir}/{DATABASE_FILE}");
                 let serialized = serde_json::to_vec(&*values)?;
                 let compressed = compress_prepend_size(&serialized);
@@ -239,16 +239,16 @@ impl Db {
         page: Option<usize>,
         sort: Sort,
     ) -> Result<Vec<ValueResponse>> {
-        let mut stats = self.stats.write().unwrap();
+        let mut stats = self.stats.write().map_err(|_| Error::Lock)?;
         stats.inc_requests();
 
-        let values = self.values.read().unwrap();
+        let values = self.values.read().map_err(|_| Error::Lock)?;
         let mut result = vec![];
         let mut ids = vec![];
 
         match sort {
             Sort::CreatedAt => {
-                let created_at_index = self.indexes.created_at.read().unwrap();
+                let created_at_index = self.indexes.created_at.read().map_err(|_| Error::Lock)?;
 
                 match direction {
                     Direction::Asc => {
@@ -264,7 +264,7 @@ impl Db {
                 }
             }
             Sort::DeleteAt => {
-                let delete_at_index = self.indexes.delete_at.read().unwrap();
+                let delete_at_index = self.indexes.delete_at.read().map_err(|_| Error::Lock)?;
 
                 match direction {
                     Direction::Asc => {
@@ -280,7 +280,7 @@ impl Db {
                 }
             }
             Sort::Key => {
-                let key_index = self.indexes.key.read().unwrap();
+                let key_index = self.indexes.key.read().map_err(|_| Error::Lock)?;
 
                 match direction {
                     Direction::Asc => {
@@ -296,7 +296,7 @@ impl Db {
                 }
             }
             Sort::UpdatedAt => {
-                let updated_at_index = self.indexes.updated_at.read().unwrap();
+                let updated_at_index = self.indexes.updated_at.read().map_err(|_| Error::Lock)?;
 
                 match direction {
                     Direction::Asc => {
@@ -325,7 +325,7 @@ impl Db {
             .collect::<Vec<Uuid>>();
 
         for id in ids {
-            let value = values.get(&id).cloned().unwrap();
+            let value = values.get(&id).ok_or(Error::NotFound)?.clone();
             result.append(&mut vec![value.into()]);
             stats.inc_reads();
         }
@@ -359,24 +359,28 @@ impl Db {
     /// let value2 = Value::Integer(100);
     /// let value2_array = Value::Array(VecDeque::from([value2.clone()]));
     /// let value_append = ValueAppend { append: value2_array.clone() };
-    /// let value_response = db.try_append(&key, value_append).unwrap().unwrap();
+    /// let value_response = db.try_append(&key, value_append.clone()).unwrap().unwrap();
     ///
     /// assert_eq!(value_response.key, key);
     /// assert_eq!(value_response.value, Value::Array(VecDeque::from([value1, value2])));
     /// assert_eq!(2, db.stats.read().unwrap().writes);
+    ///
+    /// let value_response = db.try_append("wrong_key", value_append);
+    ///
+    /// assert!(value_response.is_err());
     /// ```
     pub fn try_append(
         &self,
         key: &str,
         value_append: ValueAppend,
     ) -> Result<Option<ValueResponse>> {
-        let mut stats = self.stats.write().unwrap();
+        let mut stats = self.stats.write().map_err(|_| Error::Lock)?;
         stats.inc_requests();
 
-        let key_index = self.indexes.key.write().unwrap();
-        let id = *key_index.get(key).unwrap();
+        let key_index = self.indexes.key.write().map_err(|_| Error::Lock)?;
+        let id = *key_index.get(key).ok_or(Error::NotFound)?;
 
-        let mut values = self.values.write().unwrap();
+        let mut values = self.values.write().map_err(|_| Error::Lock)?;
         let original_value = values.get(&id).ok_or(Error::NotFound)?.clone();
 
         let value = match (original_value.value, value_append.append) {
@@ -406,7 +410,8 @@ impl Db {
             Some(result) => {
                 stats.inc_writes();
 
-                let mut updated_at_index = self.indexes.updated_at.write().unwrap();
+                let mut updated_at_index =
+                    self.indexes.updated_at.write().map_err(|_| Error::Lock)?;
                 updated_at_index.remove(&original_value.updated_at.timestamp_nanos());
                 updated_at_index.insert(result.updated_at.timestamp_nanos(), id);
 
@@ -449,7 +454,7 @@ impl Db {
     /// let key = "test_key2".to_string();
     /// let value = Value::Integer(10);
     /// let value_post = ValuePost { key: key.clone(), ttl: Some(100), value: value.clone() };
-    /// let value_response = db.try_create(value_post).unwrap().unwrap();
+    /// let value_response = db.try_create(value_post.clone()).unwrap().unwrap();
     ///
     /// assert_eq!(value_response.key, key);
     /// assert_eq!(value_response.value, value);
@@ -459,19 +464,23 @@ impl Db {
     /// assert_eq!(2, db.indexes.updated_at.read().unwrap().len());
     /// assert_eq!(2, db.stats.read().unwrap().writes);
     /// assert_eq!(2, db.values.read().unwrap().len());
+    ///
+    /// let value_response = db.try_create(value_post);
+    ///
+    /// assert!(value_response.is_err());
     /// ```
     pub fn try_create(&self, value_post: ValuePost) -> Result<Option<ValueResponse>> {
-        let mut stats = self.stats.write().unwrap();
+        let mut stats = self.stats.write().map_err(|_| Error::Lock)?;
         stats.inc_requests();
 
-        let mut key_index = self.indexes.key.write().unwrap();
+        let mut key_index = self.indexes.key.write().map_err(|_| Error::Lock)?;
         let existing_id = key_index.get(&value_post.key);
 
         if existing_id.is_some() {
             return Err(Box::new(Error::KeyExists));
         }
 
-        let mut values = self.values.write().unwrap();
+        let mut values = self.values.write().map_err(|_| Error::Lock)?;
         let id = Uuid::new_v4();
         let now = Utc::now();
         let delete_at = value_post.ttl.map(|ttl| now + Duration::seconds(ttl));
@@ -485,17 +494,20 @@ impl Db {
             Some(result) => {
                 stats.inc_writes();
 
-                let mut created_at_index = self.indexes.created_at.write().unwrap();
+                let mut created_at_index =
+                    self.indexes.created_at.write().map_err(|_| Error::Lock)?;
                 created_at_index.insert(result.created_at.timestamp_nanos(), id);
 
                 if let Some(delete_at) = delete_at {
-                    let mut delete_at_index = self.indexes.delete_at.write().unwrap();
+                    let mut delete_at_index =
+                        self.indexes.delete_at.write().map_err(|_| Error::Lock)?;
                     delete_at_index.insert(delete_at.timestamp_nanos(), id);
                 }
 
                 key_index.insert(value_post.key, id);
 
-                let mut updated_at_index = self.indexes.updated_at.write().unwrap();
+                let mut updated_at_index =
+                    self.indexes.updated_at.write().map_err(|_| Error::Lock)?;
                 updated_at_index.insert(result.updated_at.timestamp_nanos(), id);
 
                 Ok(Some(result.into()))
@@ -533,24 +545,28 @@ impl Db {
     /// assert_eq!(2, db.stats.read().unwrap().writes);
     ///
     /// let value_decrement = ValueDecrement { decrement: Some(10) };
-    /// let value_response = db.try_decrement(&key, value_decrement).unwrap().unwrap();
+    /// let value_response = db.try_decrement(&key, value_decrement.clone()).unwrap().unwrap();
     ///
     /// assert_eq!(value_response.key, key);
     /// assert_eq!(value_response.value, Value::Integer(4989));
     /// assert_eq!(3, db.stats.read().unwrap().writes);
+    ///
+    /// let value_response = db.try_decrement("wrong_key", value_decrement);
+    ///
+    /// assert!(value_response.is_err());
     /// ```
     pub fn try_decrement(
         &self,
         key: &str,
         value_decrement: ValueDecrement,
     ) -> Result<Option<ValueResponse>> {
-        let mut stats = self.stats.write().unwrap();
+        let mut stats = self.stats.write().map_err(|_| Error::Lock)?;
         stats.inc_requests();
 
-        let key_index = self.indexes.key.write().unwrap();
-        let id = *key_index.get(key).unwrap();
+        let key_index = self.indexes.key.write().map_err(|_| Error::Lock)?;
+        let id = *key_index.get(key).ok_or(Error::NotFound)?;
 
-        let mut values = self.values.write().unwrap();
+        let mut values = self.values.write().map_err(|_| Error::Lock)?;
         let original_value = values.get(&id).ok_or(Error::NotFound)?.clone();
 
         let value = match original_value.value {
@@ -584,7 +600,8 @@ impl Db {
             Some(result) => {
                 stats.inc_writes();
 
-                let mut updated_at_index = self.indexes.updated_at.write().unwrap();
+                let mut updated_at_index =
+                    self.indexes.updated_at.write().map_err(|_| Error::Lock)?;
                 updated_at_index.remove(&original_value.updated_at.timestamp_nanos());
                 updated_at_index.insert(result.updated_at.timestamp_nanos(), id);
 
@@ -624,20 +641,24 @@ impl Db {
     /// let value_response = db.try_read(&key).unwrap();
     ///
     /// assert!(value_response.is_none());
+    ///
+    /// let value_response = db.try_delete("wrong_key");
+    ///
+    /// assert!(value_response.is_err());
     /// ```
     pub fn try_delete(&self, key: &str) -> Result<Option<ValueResponse>> {
-        let key_index = self.indexes.key.read().unwrap();
-        let id = *key_index.get(key).unwrap();
+        let key_index = self.indexes.key.read().map_err(|_| Error::Lock)?;
+        let id = *key_index.get(key).ok_or(Error::NotFound)?;
         drop(key_index);
 
         self.try_delete_by_id(id)
     }
 
     fn try_delete_by_id(&self, id: Uuid) -> Result<Option<ValueResponse>> {
-        let mut stats = self.stats.write().unwrap();
+        let mut stats = self.stats.write().map_err(|_| Error::Lock)?;
         stats.inc_requests();
 
-        let mut values = self.values.write().unwrap();
+        let mut values = self.values.write().map_err(|_| Error::Lock)?;
         let result = values.remove(&id);
 
         match result {
@@ -645,18 +666,21 @@ impl Db {
             Some(result) => {
                 stats.inc_writes();
 
-                let mut created_at_index = self.indexes.created_at.write().unwrap();
+                let mut created_at_index =
+                    self.indexes.created_at.write().map_err(|_| Error::Lock)?;
                 created_at_index.remove(&result.created_at.timestamp_nanos());
 
                 if let Some(delete_at) = result.delete_at {
-                    let mut delete_at_index = self.indexes.delete_at.write().unwrap();
+                    let mut delete_at_index =
+                        self.indexes.delete_at.write().map_err(|_| Error::Lock)?;
                     delete_at_index.remove(&delete_at.timestamp_nanos());
                 }
 
-                let mut key_index = self.indexes.key.write().unwrap();
+                let mut key_index = self.indexes.key.write().map_err(|_| Error::Lock)?;
                 key_index.remove(&result.key);
 
-                let mut updated_at_index = self.indexes.updated_at.write().unwrap();
+                let mut updated_at_index =
+                    self.indexes.updated_at.write().map_err(|_| Error::Lock)?;
                 updated_at_index.remove(&result.updated_at.timestamp_nanos());
 
                 Ok(Some(result.into()))
@@ -694,24 +718,28 @@ impl Db {
     /// assert_eq!(2, db.stats.read().unwrap().writes);
     ///
     /// let value_increment = ValueIncrement { increment: Some(10) };
-    /// let value_response = db.try_increment(&key, value_increment).unwrap().unwrap();
+    /// let value_response = db.try_increment(&key, value_increment.clone()).unwrap().unwrap();
     ///
     /// assert_eq!(value_response.key, key);
     /// assert_eq!(value_response.value, Value::Integer(1011));
     /// assert_eq!(3, db.stats.read().unwrap().writes);
+    ///
+    /// let value_response = db.try_increment("wrong_key", value_increment);
+    ///
+    /// assert!(value_response.is_err());
     /// ```
     pub fn try_increment(
         &self,
         key: &str,
         value_increment: ValueIncrement,
     ) -> Result<Option<ValueResponse>> {
-        let mut stats = self.stats.write().unwrap();
+        let mut stats = self.stats.write().map_err(|_| Error::Lock)?;
         stats.inc_requests();
 
-        let key_index = self.indexes.key.write().unwrap();
-        let id = *key_index.get(key).unwrap();
+        let key_index = self.indexes.key.write().map_err(|_| Error::Lock)?;
+        let id = *key_index.get(key).ok_or(Error::NotFound)?;
 
-        let mut values = self.values.write().unwrap();
+        let mut values = self.values.write().map_err(|_| Error::Lock)?;
         let original_value = values.get(&id).ok_or(Error::NotFound)?.clone();
 
         let value = match original_value.value {
@@ -745,7 +773,8 @@ impl Db {
             Some(result) => {
                 stats.inc_writes();
 
-                let mut updated_at_index = self.indexes.updated_at.write().unwrap();
+                let mut updated_at_index =
+                    self.indexes.updated_at.write().map_err(|_| Error::Lock)?;
                 updated_at_index.remove(&original_value.updated_at.timestamp_nanos());
                 updated_at_index.insert(result.updated_at.timestamp_nanos(), id);
 
@@ -787,23 +816,27 @@ impl Db {
     /// assert_eq!(2, db.stats.read().unwrap().writes);
     ///
     /// let value_pop_back = ValuePopBack { pop_back: Some(2) };
-    /// let value_response = db.try_pop_back(&key, value_pop_back).unwrap().unwrap();
+    /// let value_response = db.try_pop_back(&key, value_pop_back.clone()).unwrap().unwrap();
     ///
     /// assert_eq!(value_response, vec![value3, value2]);
     /// assert_eq!(3, db.stats.read().unwrap().writes);
+    ///
+    /// let value_response = db.try_pop_back("wrong_key", value_pop_back);
+    ///
+    /// assert!(value_response.is_err());
     /// ```
     pub fn try_pop_back(
         &self,
         key: &str,
         value_pop_back: ValuePopBack,
     ) -> Result<Option<Vec<Value>>> {
-        let mut stats = self.stats.write().unwrap();
+        let mut stats = self.stats.write().map_err(|_| Error::Lock)?;
         stats.inc_requests();
 
-        let key_index = self.indexes.key.write().unwrap();
-        let id = *key_index.get(key).unwrap();
+        let key_index = self.indexes.key.write().map_err(|_| Error::Lock)?;
+        let id = *key_index.get(key).ok_or(Error::NotFound)?;
 
-        let mut values = self.values.write().unwrap();
+        let mut values = self.values.write().map_err(|_| Error::Lock)?;
         let original_value = values.get(&id).ok_or(Error::NotFound)?.clone();
 
         let mut return_values = vec![];
@@ -855,7 +888,8 @@ impl Db {
             Some(result) => {
                 stats.inc_writes();
 
-                let mut updated_at_index = self.indexes.updated_at.write().unwrap();
+                let mut updated_at_index =
+                    self.indexes.updated_at.write().map_err(|_| Error::Lock)?;
                 updated_at_index.remove(&original_value.updated_at.timestamp_nanos());
                 updated_at_index.insert(result.updated_at.timestamp_nanos(), id);
 
@@ -897,23 +931,27 @@ impl Db {
     /// assert_eq!(2, db.stats.read().unwrap().writes);
     ///
     /// let value_pop_front = ValuePopFront { pop_front: Some(2) };
-    /// let value_response = db.try_pop_front(&key, value_pop_front).unwrap().unwrap();
+    /// let value_response = db.try_pop_front(&key, value_pop_front.clone()).unwrap().unwrap();
     ///
     /// assert_eq!(value_response, vec![value2, value3]);
     /// assert_eq!(3, db.stats.read().unwrap().writes);
+    ///
+    /// let value_response = db.try_pop_front("wrong_key", value_pop_front);
+    ///
+    /// assert!(value_response.is_err());
     /// ```
     pub fn try_pop_front(
         &self,
         key: &str,
         value_pop_front: ValuePopFront,
     ) -> Result<Option<Vec<Value>>> {
-        let mut stats = self.stats.write().unwrap();
+        let mut stats = self.stats.write().map_err(|_| Error::Lock)?;
         stats.inc_requests();
 
-        let key_index = self.indexes.key.write().unwrap();
-        let id = *key_index.get(key).unwrap();
+        let key_index = self.indexes.key.write().map_err(|_| Error::Lock)?;
+        let id = *key_index.get(key).ok_or(Error::NotFound)?;
 
-        let mut values = self.values.write().unwrap();
+        let mut values = self.values.write().map_err(|_| Error::Lock)?;
         let original_value = values.get(&id).ok_or(Error::NotFound)?.clone();
 
         let mut return_values = vec![];
@@ -964,7 +1002,8 @@ impl Db {
             Some(result) => {
                 stats.inc_writes();
 
-                let mut updated_at_index = self.indexes.updated_at.write().unwrap();
+                let mut updated_at_index =
+                    self.indexes.updated_at.write().map_err(|_| Error::Lock)?;
                 updated_at_index.remove(&original_value.updated_at.timestamp_nanos());
                 updated_at_index.insert(result.updated_at.timestamp_nanos(), id);
 
@@ -999,24 +1038,28 @@ impl Db {
     /// let value2 = Value::Integer(100);
     /// let value2_array = Value::Array(VecDeque::from([value2.clone()]));
     /// let value_prepend = ValuePrepend { prepend: value2_array.clone() };
-    /// let value_response = db.try_prepend(&key, value_prepend).unwrap().unwrap();
+    /// let value_response = db.try_prepend(&key, value_prepend.clone()).unwrap().unwrap();
     ///
     /// assert_eq!(value_response.key, key);
     /// assert_eq!(value_response.value, Value::Array(VecDeque::from([value2, value1])));
     /// assert_eq!(2, db.stats.read().unwrap().writes);
+    ///
+    /// let value_response = db.try_prepend("wrong_key", value_prepend);
+    ///
+    /// assert!(value_response.is_err());
     /// ```
     pub fn try_prepend(
         &self,
         key: &str,
         value_prepend: ValuePrepend,
     ) -> Result<Option<ValueResponse>> {
-        let mut stats = self.stats.write().unwrap();
+        let mut stats = self.stats.write().map_err(|_| Error::Lock)?;
         stats.inc_requests();
 
-        let key_index = self.indexes.key.write().unwrap();
-        let id = *key_index.get(key).unwrap();
+        let key_index = self.indexes.key.write().map_err(|_| Error::Lock)?;
+        let id = *key_index.get(key).ok_or(Error::NotFound)?;
 
-        let mut values = self.values.write().unwrap();
+        let mut values = self.values.write().map_err(|_| Error::Lock)?;
         let original_value = values.get(&id).ok_or(Error::NotFound)?.clone();
 
         let value = match (original_value.value, value_prepend.prepend) {
@@ -1049,7 +1092,8 @@ impl Db {
             Some(result) => {
                 stats.inc_writes();
 
-                let mut updated_at_index = self.indexes.updated_at.write().unwrap();
+                let mut updated_at_index =
+                    self.indexes.updated_at.write().map_err(|_| Error::Lock)?;
                 updated_at_index.remove(&original_value.updated_at.timestamp_nanos());
                 updated_at_index.insert(result.updated_at.timestamp_nanos(), id);
 
@@ -1081,16 +1125,16 @@ impl Db {
     /// assert_eq!(1, db.stats.read().unwrap().reads);
     /// ```
     pub fn try_read(&self, key: &str) -> Result<Option<ValueResponse>> {
-        let mut stats = self.stats.write().unwrap();
+        let mut stats = self.stats.write().map_err(|_| Error::Lock)?;
         stats.inc_requests();
 
-        let key_index = self.indexes.key.read().unwrap();
+        let key_index = self.indexes.key.read().map_err(|_| Error::Lock)?;
         let id = key_index.get(key);
 
         match id {
             None => Ok(None),
             Some(id) => {
-                let values = self.values.read().unwrap();
+                let values = self.values.read().map_err(|_| Error::Lock)?;
                 let result = values.get(id).cloned();
 
                 match result {
@@ -1128,20 +1172,24 @@ impl Db {
     ///
     /// let value = Value::Integer(100);
     /// let value_put = ValuePut { ttl: None, value: value.clone() };
-    /// let value_response = db.try_update(&key, value_put).unwrap().unwrap();
+    /// let value_response = db.try_update(&key, value_put.clone()).unwrap().unwrap();
     ///
     /// assert_eq!(value_response.key, key);
     /// assert_eq!(value_response.value, value);
     /// assert_eq!(2, db.stats.read().unwrap().writes);
+    ///
+    /// let value_response = db.try_update("wrong_key", value_put);
+    ///
+    /// assert!(value_response.is_err());
     /// ```
     pub fn try_update(&self, key: &str, value_put: ValuePut) -> Result<Option<ValueResponse>> {
-        let mut stats = self.stats.write().unwrap();
+        let mut stats = self.stats.write().map_err(|_| Error::Lock)?;
         stats.inc_requests();
 
-        let key_index = self.indexes.key.read().unwrap();
-        let id = *key_index.get(key).unwrap();
+        let key_index = self.indexes.key.read().map_err(|_| Error::Lock)?;
+        let id = *key_index.get(key).ok_or(Error::NotFound)?;
 
-        let mut values = self.values.write().unwrap();
+        let mut values = self.values.write().map_err(|_| Error::Lock)?;
         let original_value = values.get(&id).ok_or(Error::NotFound)?.clone();
 
         let now = Utc::now();
@@ -1162,7 +1210,8 @@ impl Db {
             Some(result) => {
                 stats.inc_writes();
 
-                let mut delete_at_index = self.indexes.delete_at.write().unwrap();
+                let mut delete_at_index =
+                    self.indexes.delete_at.write().map_err(|_| Error::Lock)?;
                 if let Some(original_value_delete_at) = original_value.delete_at {
                     delete_at_index.remove(&original_value_delete_at.timestamp_nanos());
                 }
@@ -1170,7 +1219,8 @@ impl Db {
                     delete_at_index.insert(delete_at.timestamp_nanos(), id);
                 }
 
-                let mut updated_at_index = self.indexes.updated_at.write().unwrap();
+                let mut updated_at_index =
+                    self.indexes.updated_at.write().map_err(|_| Error::Lock)?;
                 updated_at_index.remove(&original_value.updated_at.timestamp_nanos());
                 updated_at_index.insert(result.updated_at.timestamp_nanos(), id);
 
