@@ -2,6 +2,7 @@ use crate::{
     config::Config,
     error::Error,
     stat_record::StatRecord,
+    user_record::UserRecord,
     value_index::ValueIndex,
     value_record::{
         Value, ValueAppend, ValueDecrement, ValueIncrement, ValuePopBack, ValuePopFront, ValuePost,
@@ -27,6 +28,7 @@ pub struct Db {
     api_keys: RwLock<Vec<Uuid>>,
     pub config: Config,
     pub stats: RwLock<StatRecord>,
+    pub users: RwLock<Vec<UserRecord>>,
     pub values: RwLock<HashMap<Uuid, ValueRecord>>,
     pub values_indexes: ValueIndex,
 }
@@ -49,6 +51,7 @@ impl Db {
             api_keys: RwLock::new(vec![]),
             config,
             stats: RwLock::new(StatRecord::default()),
+            users: RwLock::new(vec![]),
             values: RwLock::new(HashMap::new()),
             values_indexes: ValueIndex::default(),
         }
